@@ -5,15 +5,15 @@ class Grammar {
     ArrayList<Token> Terminals;
     ArrayList<Token> NonTerminals;
 
-    public int countOfProduction;
+    private int countOfProduction;
     ArrayList<Production> Productions;
     ArrayList<ArrayList<Token>> FirstSet;
     private ArrayList<ArrayList<Token>> FollowSet;
     HashMap<Token, ArrayList<Token>> first;
     HashMap<Token, ArrayList<Token>> follow;
     private Controller controller;
-
     HashMap<String, HashMap<String, Production>> SyntaxMatrix;
+
 
     public static void main(String[] args) throws IOException {
         Grammar g = new Grammar("example6.txt");
@@ -30,7 +30,6 @@ class Grammar {
         g.Parse("( 1 + 1 )");
 
         //System.out.println(g.NonTerminals);
-
     }
 
     void makeSyntaxMatrix(){
@@ -42,11 +41,6 @@ class Grammar {
         }
         for(Token nt : NonTerminals)
             SyntaxMatrix.put(nt.data, new HashMap<>());
-
-
-        //SyntaxMatrix.get(NonTerminals.get(0)).put(Terminals.get(3), Productions.get(0));
-        //SyntaxMatrix.get(NonTerminals.get(0)).put(Terminals.get(0), Productions.get(1));
-        //SyntaxMatrix.get(NonTerminals.get(1)).put(Terminals.get(3), Productions.get(2));
 
         for(Production pro : Productions){
             for(Token tok : FirstNew(pro)){
@@ -73,15 +67,49 @@ class Grammar {
 
     }
 
-    public void Parse(String str){
+    boolean isLeftRecursive(){
+        for(Production pro : Productions)
+            if(pro.nonTerminal.data.equals(pro.get(0).data))
+                return true;
+        return false;
+    }
+
+    void Parse(String str){
+        //ArrayList<String> program = new ArrayList<>();
+
+        // Пока что эта строка - "Лексер". Для разбора требуется один пробел между каждым токеном
+        //String[] tempArr = str.split(" ");
+
+        //
         ArrayList<String> program = new ArrayList<>();
+        String token = "";
+        for (int i = 0; i < str.length(); i++) {
+            if(str.charAt(i) == ' ')
+                continue;
 
-        // РџРѕРєР° С‡С‚Рѕ СЌС‚Р° СЃС‚СЂРѕРєР° - "Р›РµРєСЃРµСЂ". Р”Р»СЏ СЂР°Р·Р±РѕСЂР° С‚СЂРµР±СѓРµС‚СЃСЏ РѕРґРёРЅ РїСЂРѕР±РµР» РјРµР¶РґСѓ РєР°Р¶РґС‹Рј С‚РѕРєРµРЅРѕРј
-        String[] tempArr = str.split(" ");
+            token += str.charAt(i);
+            for(Token t : Terminals){
+                if(t.data.equals(token)){
+                    program.add(token);
+                    token = "";
+                }
+            }
+        }
 
+        System.out.println("Получено _" + str + "_");
+        System.out.println("Разобрано _" + program + "_");
+
+        if(!true)
+            return;
+        //
+
+
+        /*
         for(String s : tempArr)
             if(!s.equals(" "))
                 program.add(s.replaceAll("\n", ""));
+
+         */
 
 
         int codePointer = 0;
@@ -97,7 +125,7 @@ class Grammar {
             //    stack.pop();
             //} else
             if(stack.peek().equals("$") && codePointer == program.size()){
-                System.out.println("РЈСЃРїРµС…");
+                System.out.println("Успех");
                 controller.LogConsole.appendText("Success\n");
                 return;
             } else if(stack.peek().equals("#")){
@@ -146,10 +174,6 @@ class Grammar {
         return result;
     }
 
-
-
-
-
     Grammar(Controller controller, String fileName) throws IOException{
         this(fileName);
         this.controller = controller;
@@ -173,7 +197,7 @@ class Grammar {
             Scanner lineScanner = new Scanner(s).useDelimiter("\\s");
             while (lineScanner.hasNextLine()) {
                 String line = lineScanner.nextLine();
-                // РЈР±РёСЂР°РµРј РєРѕРјРјРµРЅС‚Р°СЂРёРё
+                // Убираем комментарии
                 if(line.contains("//"))
                     line = (String) line.subSequence(0, line.indexOf("//"));
                 rawTokens.add(line);
@@ -237,7 +261,6 @@ class Grammar {
                     boolean allProductionsHasEps = true;
                     for(int i = 0; i < pro.size(); i++){
                         Token Yi = pro.get(i);
-                        //System.out.println(pro);
                         if(Yi.type.equals("TERMINAL")){
                             set[setIndex] = Yi;
                             setIndex++;
@@ -268,23 +291,12 @@ class Grammar {
                 }
             }
         }
-        /*
-        for(Production pro : Productions){
-            if(pro.nonTerminal.equals(token)){
-                if(pro.hasToken(new Token("#", "EPSILON")))
-                    set[setIndex] = new Token("#", "EPSILON");
-            }
-        }
-
-         */
-
-        //System.out.println("final set for " + token.data + " is " + Arrays.toString(set));
         return set;
     }
 
     Token[] Follow(Token token){
         //System.out.println();
-        //System.out.println("РћР±СЂР°Р±РѕС‚РєР° : " + token.data);
+        //System.out.println("Обработка : " + token.data);
         String debug = "";
         Token[] set = new Token[100];
         int setIndex = 0;
@@ -352,7 +364,7 @@ class Grammar {
                             System.out.println("Rule-3-2");
                         }
 
-                        // Р­С‚Рѕ РЅР° example5 РЅРµ РІР»РёСЏРµС‚
+                        // Это на example5 не влияет
                         if(pro.get(i).equals(token))
                             continue;
 
@@ -400,7 +412,6 @@ class Grammar {
             ArrayList<Token> e = new ArrayList<>(Arrays.asList(First(nonTerminal)));
             ArrayList<Token> ee = removeDuplicates(e);
             ee.remove(null);
-            //System.out.println(ee);
             FirstSet.add(ee);
             first.put(nonTerminal, ee);
         }
@@ -451,7 +462,7 @@ class Grammar {
             controller.LogConsole.appendText("\n");
     }
 
-    // РўРѕРєРµРЅ СЃРѕРґРµСЂРёС‚СЃСЏ РІ РјР°СЃСЃРёРІРµ
+    // Токен содерится в массиве
     private int inTokenArray(Token[] tokenArray, Token wantedToken) {
         int index = 0;
         for (Token arrayToken : tokenArray) {
@@ -486,9 +497,7 @@ class Grammar {
         return "TERMINAL";
     }
 
-
-
-    Token[] FirstNew(Production pro){
+    private Token[] FirstNew(Production pro){
         Token token = pro.nonTerminal;
         int setIndex = 0;
         Token[] set = new Token[30];
@@ -538,102 +547,6 @@ class Grammar {
         }
          */
         //System.out.println("final set for " + token.data + " is " + Arrays.toString(set));
-        return set;
-    }
-
-    Token[] FollowNew(Production pro){
-        Token token = pro.nonTerminal;
-        //System.out.println();
-        //System.out.println("РћР±СЂР°Р±РѕС‚РєР° : " + token.data);
-        String debug = "";
-        Token[] set = new Token[100];
-        int setIndex = 0;
-        if (token.equals(NonTerminals.get(0))){
-            set[setIndex] = new Token("$", "END_MARKER");
-            setIndex++;
-        }
-
-        if(!pro.definitions.contains(token))
-            return set;
-        if(token.data.equals(debug)){
-            System.out.println(pro + " has token " + token.data);
-        }
-        int i = pro.getTokenIndex(token) + 1;
-        if(token.data.equals(debug))
-            System.out.println(pro + " " + i + " pro.size=" + pro.size());
-        // Rule-2
-        if(i == pro.size()){
-            if(token.data.equals(debug)){
-                System.out.println("Rule-2");
-            }
-            if (pro.nonTerminal.equals(NonTerminals.get(0))){
-                Token[] follow = Follow(pro.nonTerminal);
-                for (Token t : follow) {
-                    if (t != null) {
-                        set[setIndex] = t;
-                        setIndex++;
-                    }
-                }
-                set[setIndex] = new Token("$", "END_MARKER");
-                setIndex++;
-                //return set;
-            } else {
-                if(pro.nonTerminal.equals(token))
-                    return set;
-                Token[] Follow = Follow(pro.nonTerminal);
-                for (Token t : Follow) {
-                    if (t != null) {
-                        set[setIndex] = t;
-                        setIndex++;
-                    }
-                }
-                if(token.data.equals(debug))
-                    System.out.println("Follow(" + pro.nonTerminal.data + ")=" + Arrays.toString(Follow));
-            }
-        }
-        else
-            for(; i < pro.size(); i++){
-                // Rule 3
-                Token[] First = First(pro.get(i));
-                // Rule 3-2
-                if(inTokenArray(First, new Token("#", "EPSILON")) !=-1 ){
-                    if(token.data.equals(debug)){
-                        System.out.println("Rule-3-2");
-                    }
-                    if(pro.get(i).equals(token))
-                        continue;
-                    for (Token value : First) {
-                        //System.out.println(j + "=" + First[j]);
-                        if (value == null || value.type.equals("EPSILON"))
-                            continue;
-                        set[setIndex] = value;
-                        setIndex++;
-                    }
-                    Token[] Follow = Follow(pro.nonTerminal);
-                    for (Token t: Follow) {
-                        if(t != null){
-                            set[setIndex] = t;
-                            setIndex++;
-                        }
-                    }
-                    if(token.data.equals(debug)){
-                        System.out.println("Follow(" + pro.nonTerminal.data + ") = " + Arrays.toString(Follow));
-                        System.out.println("First(" + pro.get(i).data + ") = " + Arrays.toString(First));
-                        System.out.println("Set = " + Arrays.toString(set));
-                    }
-                }
-                // Rule-3-1
-                else {
-                    if(token.data.equals(debug))
-                        System.out.println("Rule-3-1");
-                    for (Token t: First) {
-                        if(t != null){
-                            set[setIndex] = t;
-                            setIndex++;
-                        }
-                    }
-                }
-            }
         return set;
     }
 

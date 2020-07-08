@@ -1,19 +1,17 @@
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.*;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Scanner;
-import java.util.Stack;
 
 public class Controller {
 
@@ -32,7 +30,8 @@ public class Controller {
     public Button MakeSyntaxMatrix;
     @FXML
     public Button LoadFile;
-
+    @FXML
+    private Button isLeftRecursive;
     @FXML
     public Button Parse;
     @FXML
@@ -116,6 +115,10 @@ public class Controller {
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
             }
+            if(Grammar.isLeftRecursive()) {
+                LogConsole.appendText("Grammar is Left Recursive\nPlease make left factorization of your grammar");
+                return;
+            }
             Grammar.makeFirstSet();
             Grammar.makeFollowSet();
 
@@ -124,6 +127,9 @@ public class Controller {
             Grammar.printFollowSet();
         });
 
+        isLeftRecursive.setOnAction(actionEvent -> {
+            LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
+        });
 
         Parse.setOnAction(actionEvent -> {
             Grammar.Parse(GrammarArea.getText());
@@ -173,7 +179,6 @@ public class Controller {
             newWindow.setScene(scene);
 
             newWindow.show();
-
 
         });
 
