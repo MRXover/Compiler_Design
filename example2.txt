@@ -1,0 +1,5 @@
+S : A
+A : a B AA
+AA : d AA | #
+B : b
+C : g

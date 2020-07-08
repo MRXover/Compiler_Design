@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="1000.0" style="-fx-background-color: #102033;" xmlns="http://javafx.com/javafx/10.0.2-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controller">
+   <children>
+      <AnchorPane layoutY="71.0" prefHeight="529.0" prefWidth="1000.0">
+         <children>
+            <TextArea fx:id="LogConsole" layoutX="538.0" layoutY="65.0" prefHeight="376.0" prefWidth="448.0" />
+            <TextArea fx:id="GrammarArea" layoutX="139.0" layoutY="65.0" prefHeight="376.0" prefWidth="381.0" />
+            <Button fx:id="LoadGrammar1" layoutX="14.0" layoutY="105.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 1" />
+            <Button fx:id="LoadGrammar2" layoutX="14.0" layoutY="145.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 2" />
+            <Button fx:id="LoadGrammar5" layoutX="14.0" layoutY="263.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 5" />
+            <Button fx:id="LoadGrammar3" layoutX="14.0" layoutY="183.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 3" />
+            <Button fx:id="LoadGrammar4" layoutX="14.0" layoutY="223.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 4" />
+            <Button fx:id="Clean" layoutX="14.0" layoutY="351.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Clean">
+               <font>
+                  <Font name="Segoe UI" size="12.0" />
+               </font>
+            </Button>
+            <Button fx:id="MakeFirstAndFollow" layoutX="538.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="FIRST and FOLLOW">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Button>
+            <Button fx:id="MakeSyntaxMatrix" layoutX="691.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="Syntax Matrix">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font></Button>
+            <Button fx:id="LoadFile" layoutX="14.0" layoutY="22.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Load from file" />
+            <Button fx:id="LoadGrammar6" layoutX="14.0" layoutY="302.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 6" />
+            <Button fx:id="Parse" layoutX="843.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="Parse">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Button>
+            <Label layoutX="167.0" layoutY="22.0" prefHeight="43.0" prefWidth="282.0" text="Grammar/code Area" textFill="WHITE">
+               <font>
+                  <Font name="Segoe UI" size="30.0" />
+               </font>
+            </Label>
+         </children>
+      </AnchorPane>
+      <Label layoutX="724.0" layoutY="14.0" prefHeight="43.0" prefWidth="262.0" text="Compiler design" textFill="WHITE">
+         <font>
+            <Font name="Segoe UI" size="36.0" />
+         </font>
+      </Label>
+   </children>
+</AnchorPane>
