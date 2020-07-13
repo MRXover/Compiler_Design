@@ -55,5 +55,10 @@
             <Font name="Segoe UI" size="14.0" />
          </font>
       </Button>
+      <Button fx:id="LeftFactoring" layoutX="379.0" layoutY="39.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="Left Factoring">
+         <font>
+            <Font name="Segoe UI" size="14.0" />
+         </font>
+      </Button>
    </children>
 </AnchorPane>

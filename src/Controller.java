@@ -33,6 +33,8 @@ public class Controller {
     @FXML
     private Button isLeftRecursive;
     @FXML
+    private Button LeftFactoring;
+    @FXML
     public Button Parse;
     @FXML
     public Button LoadGrammar1;
@@ -52,8 +54,8 @@ public class Controller {
 
         LoadGrammar1.setOnAction(actionEvent -> {
             try {
-                Grammar = new Grammar(this,"example1.txt");
-                LogConsole.appendText("Test Grammar 1\n");
+                Grammar = new Grammar(this,"example10.txt");
+                LogConsole.appendText("Test Grammar 10\n");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -211,6 +213,41 @@ public class Controller {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        });
+
+        LeftFactoring.setOnAction(actionEvent -> {
+            LogConsole.appendText("BEFORE :\n");
+            for(Production pro : Grammar.Productions)
+                LogConsole.appendText(pro + "\n");
+
+            while(Grammar.isLeftRecursive()){
+                for(Production pro : Grammar.Productions){
+                    if(pro.nonTerminal.data.equals(pro.get(0).data)) {
+                        Token newToken = new Token(pro.nonTerminal.data + "\'");
+                        Production newProd1 = new Production(pro.nonTerminal);
+                        Production newProd2 = new Production(newToken);
+                        Production newProd3 = new Production(newToken);
+
+                        for(int i = 1; i < pro.definitions.size(); i++){
+                            newProd1.add(pro.definitions.get(i));
+                            newProd2.add(pro.definitions.get(i));
+                        }
+
+                        newProd2.add(newToken);
+                        newProd3.add(new Token("#", "EPSILON"));
+
+                        Grammar.Productions.remove(pro);
+                        Grammar.Productions.add(newProd1);
+                        Grammar.Productions.add(newProd2);
+                        Grammar.Productions.add(newProd3);
+                        break;
+                    }
+                }
+            }
+
+            LogConsole.appendText("\nAFTER :\n");
+            for(Production pro : Grammar.Productions)
+                LogConsole.appendText(pro + "\n");
         });
     }
 }
