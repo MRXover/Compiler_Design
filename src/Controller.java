@@ -230,6 +230,11 @@ public class Controller {
                 return;
             }
 
+            if(!Grammar.isLeftRecursive()){
+                LogConsole.appendText("Grammar is not left recursive\n");
+                return;
+            }
+
             LogConsole.appendText("BEFORE :\n");
             for(Production pro : Grammar.Productions)
                 LogConsole.appendText(pro + "\n");
