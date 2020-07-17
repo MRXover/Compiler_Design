@@ -1,11 +1,8 @@
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
-import javafx.scene.Node;
-import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
+import javafx.scene.*;
+import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -118,7 +115,7 @@ public class Controller {
                 return;
             }
             if(Grammar.isLeftRecursive()) {
-                LogConsole.appendText("Grammar is Left Recursive\nPlease make left factorization of your grammar");
+                LogConsole.appendText("Grammar is Left Recursive\nPlease make left factorization of your grammar\n");
                 return;
             }
             Grammar.makeFirstSet();
@@ -130,15 +127,27 @@ public class Controller {
         });
 
         isLeftRecursive.setOnAction(actionEvent -> {
+            if(Grammar == null){
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
             LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
         });
 
         Parse.setOnAction(actionEvent -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
             Grammar.Parse(GrammarArea.getText());
         });
 
         MakeSyntaxMatrix.setOnAction(actionEvent -> {
-            if(Grammar == null || Grammar.FirstSet == null){
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+            if(Grammar.FirstSet == null){
                 LogConsole.appendText("Make FIRST and FOLLOW\n");
                 return;
             }
@@ -216,6 +225,11 @@ public class Controller {
         });
 
         LeftFactoring.setOnAction(actionEvent -> {
+            if(Grammar == null){
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+
             LogConsole.appendText("BEFORE :\n");
             for(Production pro : Grammar.Productions)
                 LogConsole.appendText(pro + "\n");
