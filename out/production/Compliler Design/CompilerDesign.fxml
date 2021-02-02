@@ -10,14 +10,9 @@
    <children>
       <AnchorPane layoutY="71.0" prefHeight="529.0" prefWidth="1000.0">
          <children>
-            <TextArea fx:id="LogConsole" layoutX="538.0" layoutY="65.0" prefHeight="376.0" prefWidth="448.0" />
-            <TextArea fx:id="GrammarArea" layoutX="139.0" layoutY="65.0" prefHeight="376.0" prefWidth="381.0" />
-            <Button fx:id="LoadGrammar1" layoutX="14.0" layoutY="105.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 1" />
-            <Button fx:id="LoadGrammar2" layoutX="14.0" layoutY="145.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 2" />
-            <Button fx:id="LoadGrammar5" layoutX="14.0" layoutY="263.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 5" />
-            <Button fx:id="LoadGrammar3" layoutX="14.0" layoutY="183.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 3" />
-            <Button fx:id="LoadGrammar4" layoutX="14.0" layoutY="223.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 4" />
-            <Button fx:id="Clean" layoutX="14.0" layoutY="351.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Clean">
+            <TextArea fx:id="LogConsole" layoutX="538.0" layoutY="65.0" prefHeight="379.0" prefWidth="448.0" />
+            <TextArea fx:id="GrammarArea" layoutX="139.0" layoutY="65.0" prefHeight="183.0" prefWidth="381.0" promptText="Write your grammar here" />
+            <Button fx:id="Clean" layoutX="14.0" layoutY="207.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Clear">
                <font>
                   <Font name="Segoe UI" size="12.0" />
                </font>
@@ -31,18 +26,19 @@
                <font>
                   <Font name="Segoe UI" size="14.0" />
                </font></Button>
-            <Button fx:id="LoadFile" layoutX="14.0" layoutY="22.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Load from file" />
-            <Button fx:id="LoadGrammar6" layoutX="14.0" layoutY="302.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Test Grammer 6" />
+            <Button fx:id="LoadFile" layoutX="14.0" layoutY="65.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Load from file" />
             <Button fx:id="Parse" layoutX="843.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="Parse">
                <font>
                   <Font name="Segoe UI" size="14.0" />
                </font>
             </Button>
-            <Label layoutX="167.0" layoutY="22.0" prefHeight="43.0" prefWidth="282.0" text="Grammar/code Area" textFill="WHITE">
+            <TextArea fx:id="CodeArea" layoutX="139.0" layoutY="260.0" prefHeight="184.0" prefWidth="381.0" promptText="Write your code here" />
+            <Button fx:id="SaveFile" layoutX="14.0" layoutY="111.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Save to file" />
+            <Button fx:id="LoadGrammar" layoutX="14.0" layoutY="157.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Load">
                <font>
-                  <Font name="Segoe UI" size="30.0" />
+                  <Font name="Segoe UI" size="12.0" />
                </font>
-            </Label>
+            </Button>
          </children>
       </AnchorPane>
       <Label layoutX="724.0" layoutY="14.0" prefHeight="43.0" prefWidth="262.0" text="Compiler design" textFill="WHITE">

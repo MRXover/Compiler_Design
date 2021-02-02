@@ -7,30 +7,89 @@ class Grammar {
 
     private int countOfProduction;
     ArrayList<Production> Productions;
+
     ArrayList<ArrayList<Token>> FirstSet;
-    private ArrayList<ArrayList<Token>> FollowSet;
+    ArrayList<ArrayList<Token>> FollowSet;
     HashMap<Token, ArrayList<Token>> first;
     HashMap<Token, ArrayList<Token>> follow;
+
     private Controller controller;
     HashMap<String, HashMap<String, Production>> SyntaxMatrix;
 
+    //HashSet<Production> closure;
+
 
     public static void main(String[] args) throws IOException {
-        Grammar g = new Grammar("example6.txt");
+        Grammar g = new Grammar("example10.txt");
+        g.printGrammar();
+        g.augmentGivenGrammar();
+        g.printGrammar();
 
-        g.makeFirstSet();
-        g.makeFollowSet();
+        HashSet<Production> C = new HashSet<>();
+        Production start = g.createItem(0, g.Productions.get(0));
+        C.add(start);
+        System.out.println();
+        System.out.println(start);
+        System.out.println();
+        System.out.println(g.closure(C));
 
-        //g.printFirstSet();
-        //g.printFollowSet();
-        g.makeSyntaxMatrix();
 
-        //g.Parse("ID");
-        //g.Parse("ID + ( ID * ID )");
-        g.Parse("( 1 + 1 )");
-
-        //System.out.println(g.NonTerminals);
     }
+
+    //============================== LR ==============================
+
+    void printGrammar(){
+        System.out.println();
+        for (Production production : Productions)
+            System.out.println(production.toString());
+    }
+
+    void augmentGivenGrammar(){
+        Token start = new Token(Productions.get(0).nonTerminal.data, "NONTERMINAL");
+        start.data += "_st";
+        Productions.add(0, new Production(start).add(Productions.get(0).nonTerminal));
+        NonTerminals.add(0, start);
+    }
+
+    HashSet<Production> closure(HashSet<Production> I){
+        LinkedHashSet<Production> J = new LinkedHashSet<Production>(I);
+        Boolean added[] = new Boolean[Productions.size()];
+        boolean nothingToAdd = true;
+
+        do {
+            //каждый пункт из J
+            Iterator iterator = J.iterator();
+            while (iterator.hasNext())  {
+                // A -> a Х B b
+                Production pro = (Production) iterator.next();
+                Token B = pro.definitions.get(pro.definitions.indexOf(new Token("Х", "DOT")) + 1);
+
+                for (Production A : Productions) {
+                    if (A.nonTerminal.equals(B)) {
+
+                        J.add(createItem(0, A));
+                        if(A.definitions.indexOf(new Token("Х", "DOT")) != A.definitions.size()){
+                            nothingToAdd = false;
+                        }
+                    }
+                }
+            }
+        } while (!nothingToAdd);
+        
+
+
+        return J;
+    }
+
+
+    Production createItem(int index, Production p){
+        Production pro = new Production(p.nonTerminal);
+        pro.definitions.addAll(p.definitions);
+        pro.definitions.add(index, new Token("Х", "DOT"));
+        return pro;
+    }
+
+    //============================== LR ==============================
 
     void makeSyntaxMatrix(){
         SyntaxMatrix = new HashMap<>();
@@ -48,7 +107,7 @@ class Grammar {
                     if(!tok.type.equals("EPSILON"))
                         SyntaxMatrix.get(pro.nonTerminal.data).put(tok.data, pro);
                     else{
-                        for(Token t : Follow(pro.nonTerminal)){
+                        for(Token t : follow.get(pro.nonTerminal)){ // ============================
                             if(t != null){
                                 SyntaxMatrix.get(pro.nonTerminal.data).put(t.data, new Production(pro.nonTerminal, true));
                             }
@@ -101,8 +160,6 @@ class Grammar {
 
         if(!true)
             return;
-        //
-
 
         /*
         for(String s : tempArr)
@@ -201,12 +258,11 @@ class Grammar {
                 if(line.contains("//"))
                     line = (String) line.subSequence(0, line.indexOf("//"));
                 rawTokens.add(line);
-                System.out.println(line);
             }
         }
         in.close();
+
         countOfProduction = rawTokens.size();
-        System.out.println(rawTokens);
         Productions = new ArrayList<>(countOfProduction);
         String temp;
         for (int i = 0; i < countOfProduction; i++) {
@@ -241,10 +297,12 @@ class Grammar {
         }
         Terminals.add(new Token("$", "END_MARKER"));
         countOfProduction = definitionIndex;
-        System.out.println("===");
-        for (Production production : Productions)
-            System.out.println(production.toString());
     }
+
+    Grammar(String grammar, int i){
+
+    }
+
 
     Token[] First(Token token){
         int setIndex = 0;
@@ -421,7 +479,14 @@ class Grammar {
         FollowSet = new ArrayList<>(NonTerminals.size());
         follow = new HashMap<>(NonTerminals.size());
         for (Token nonTerminal : NonTerminals) {
-            ArrayList<Token> e = new ArrayList<>(Arrays.asList(Follow(nonTerminal)));
+            ArrayList<Token> e;
+            try {
+                e = new ArrayList<>(Arrays.asList(Follow(nonTerminal)));
+            } catch (StackOverflowError stackOverflowError){
+                e = new ArrayList<>(Arrays.asList(First(nonTerminal)));
+                e.add(new Token("$","END_MARKER"));
+                e.remove(new Token("#","EPSILON"));
+            }
             ArrayList<Token> ee = removeDuplicates(e);
             ee.remove(null);
             //System.out.println(ee);
@@ -494,6 +559,8 @@ class Grammar {
             return "PIPE";
         if(s.equals("#"))
             return "EPSILON";
+        if(s.equals("Х"))
+            return "DOT";
         return "TERMINAL";
     }
 

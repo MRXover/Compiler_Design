@@ -290,8 +290,6 @@ public class TestGrammar {
     }
 
 
-
-
     public boolean TestAllFirst() throws IOException {
         TestGrammar1First();
         TestGrammar2First();

@@ -8,6 +8,7 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 
 public class Controller {
@@ -22,6 +23,8 @@ public class Controller {
     @FXML
     public Button Clean;
     @FXML
+    public Button LoadGrammar;
+    @FXML
     public Button MakeFirstAndFollow;
     @FXML
     public Button MakeSyntaxMatrix;
@@ -34,75 +37,11 @@ public class Controller {
     @FXML
     public Button Parse;
     @FXML
-    public Button LoadGrammar1;
-    @FXML
-    public Button LoadGrammar2;
-    @FXML
-    private Button LoadGrammar3;
-    @FXML
-    private Button LoadGrammar4;
-    @FXML
-    private Button LoadGrammar5;
-    @FXML
-    private Button LoadGrammar6;
+    public Button SaveFile;
+
 
     @FXML
     void initialize() {
-
-        LoadGrammar1.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this,"example10.txt");
-                LogConsole.appendText("Test Grammar 10\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        LoadGrammar2.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this,"example2.txt");
-                LogConsole.appendText("Test Grammar 2\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        LoadGrammar3.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this, "example3.txt");
-                LogConsole.appendText("Test Grammar 3\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        LoadGrammar4.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this,"example4.txt");
-                LogConsole.appendText("Test Grammar 4\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-        });
-
-        LoadGrammar5.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this,"example5.txt");
-                LogConsole.appendText("Test Grammar 5\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
-
-        LoadGrammar6.setOnAction(actionEvent -> {
-            try {
-                Grammar = new Grammar(this,"example6.txt");
-                LogConsole.appendText("Test Grammar 5\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
 
         Clean.setOnAction(actionEvent -> {
             GrammarArea.setText("");
@@ -115,15 +54,19 @@ public class Controller {
                 return;
             }
             if(Grammar.isLeftRecursive()) {
-                LogConsole.appendText("Grammar is Left Recursive\nPlease make left factorization of your grammar\n");
+                LogConsole.appendText("Grammar is Left Recursive\nPlease, make left factorization of your grammar\n");
                 return;
             }
-            Grammar.makeFirstSet();
-            Grammar.makeFollowSet();
+            try {
+                Grammar.makeFirstSet();
+                Grammar.makeFollowSet();
 
-            Grammar.printFirstSet();
-            System.out.println();
-            Grammar.printFollowSet();
+                Grammar.printFirstSet();
+                System.out.println();
+                Grammar.printFollowSet();
+            } catch (Exception e){
+                LogConsole.appendText(e.getMessage());
+            }
         });
 
         isLeftRecursive.setOnAction(actionEvent -> {
@@ -201,27 +144,43 @@ public class Controller {
             FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
             fileChooser.getExtensionFilters().add(txtfilter);
             fileChooser.setTitle("File choosing");
+            fileChooser.setInitialDirectory(new File("./"));
             File fileObject = fileChooser.showOpenDialog(Stage);
 
             if(fileObject == null){
                 LogConsole.appendText("Input error\n");
                 return;
             }
-            /*
-            String str = "";
-            try (Scanner scanner = new Scanner(fileObject)) {
-                while (scanner.hasNext())
-                    str += scanner.next() + "\n";
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
-             */
 
             try {
                 Grammar = new Grammar(this, fileObject.getPath());
-            } catch (IOException e) {
+            } catch (Exception e) {
+                LogConsole.appendText("Input error\n");
                 e.printStackTrace();
             }
+        });
+
+        SaveFile.setOnAction(actionEvent -> {
+            Node source = (Node) actionEvent.getSource();
+            Stage Stage = (Stage) source.getScene().getWindow();
+
+            FileChooser fileChooser = new FileChooser();
+            FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
+            fileChooser.getExtensionFilters().add(txtfilter);
+            fileChooser.setTitle("File saving");
+            fileChooser.setInitialDirectory(new File("./"));
+
+            File file = fileChooser.showSaveDialog(Stage);
+
+            try(FileWriter writer = new FileWriter(file.getAbsoluteFile(), false)) {
+                writer.write(GrammarArea.getText());
+                writer.append('\n');
+                writer.flush();
+            } catch(IOException ex){
+                System.out.println(ex.getMessage());
+                LogConsole.appendText(ex.getMessage());
+            }
+
         });
 
         LeftFactoring.setOnAction(actionEvent -> {
@@ -267,6 +226,10 @@ public class Controller {
             LogConsole.appendText("\nAFTER :\n");
             for(Production pro : Grammar.Productions)
                 LogConsole.appendText(pro + "\n");
+        });
+
+        LoadGrammar.setOnAction(event -> {
+
         });
     }
 }
