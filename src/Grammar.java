@@ -1,3 +1,5 @@
+import org.w3c.dom.ls.LSOutput;
+
 import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
@@ -33,18 +35,42 @@ class Grammar {
 
  */
 
+/*
+        Готовый тестовый пример для GOTO и для CLOSURE тоже
+
         Grammar g = new Grammar("example10.txt");
         g.printGrammar();
         g.augmentGivenGrammar();
         g.printGrammar();
 
-        HashSet<Production> C = new HashSet<>();
+        ArrayList<Production> C = new ArrayList<Production>();
+        Production p1 = g.createItem(1, g.Productions.get(0));
+        Production p2 = g.createItem(1, g.Productions.get(1));
+        C.add(p1);
+        C.add(p2);
+
+        System.out.println(p1);
+        System.out.println(p2);
+
+        g.GoTo(C, new Token("+", "TERMINAL"));
+ */
+
+/*
+        Готовый тестовый пример для CLOSURE
+
+        Grammar g = new Grammar("example10.txt");
+        g.printGrammar();
+        g.augmentGivenGrammar();
+        g.printGrammar();
+
+        ArrayList<Production> C = new ArrayList<Production>();
         Production start = g.createItem(0, g.Productions.get(0));
         C.add(start);
         System.out.println();
         System.out.println(start);
         System.out.println();
         g.closure(C);
+ */
 
     }
 
@@ -63,22 +89,48 @@ class Grammar {
         NonTerminals.add(0, start);
     }
 
-    HashSet<Production> closure(HashSet<Production> I){
-        LinkedHashSet<Production> J = new LinkedHashSet<Production>(I);
+    ArrayList<Production> GoTo(ArrayList<Production> I, Token X){
+        ArrayList<Production> J = new ArrayList<Production>();
+
+        System.out.println();
+        System.out.println("GOTO");
+        for(Production pro : I){
+            System.out.println(pro);
+            if(pro.definitions.contains(X)){
+
+                Production temp = new Production(pro.nonTerminal);
+                temp.definitions.addAll(pro.definitions);
+                int indexOfDot = temp.definitions.indexOf(new Token("•", "DOT"));
+                temp.definitions.set(indexOfDot, temp.definitions.get(indexOfDot + 1));
+                temp.definitions.set(indexOfDot + 1, new Token("•", "DOT"));
+
+                System.out.println(temp);
+
+                ArrayList<Production> p = new ArrayList<>();
+                p.add(temp);
+                J.addAll(closure(p));
+            }
+        }
+
+        System.out.println("J = ");
+        System.out.println(J);
+        return J;
+    }
+
+
+
+    ArrayList<Production> closure(ArrayList<Production> I){
         HashMap<String, Boolean> added = new HashMap<>();
         for (Token tok : NonTerminals)
             added.put(tok.data, false);
 
         boolean nothingToAdd = false;
 
-
         ArrayList<Production> set = new ArrayList<>();
         Production firstProd = I.iterator().next();
         set.add(firstProd);
-        //Token next = firstProd.get(1);
         ArrayDeque<Token> q = new ArrayDeque<>();
-
-        q.addFirst(firstProd.get(1));
+        q.addFirst(firstProd.get(firstProd.definitions.indexOf(new Token("•", "DOT")) + 1));
 
         int i = 0;
         do {
@@ -95,11 +147,10 @@ class Grammar {
                     if(!set.contains(t)) {
                         set.add(t);
                         System.out.println(t.definitions);
-                        Token tok = t.definitions.get(1);
+                        Token tok = t.definitions.get(t.definitions.indexOf(new Token("•", "DOT")) + 1);
 
                         if(!tok.type.equals("TERMINAL"))
                             System.out.println("Токен " + tok.data + " " + added.get(tok.data));
-
 
                         if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
                             System.out.println("Добавлен " + tok.data);
@@ -107,7 +158,6 @@ class Grammar {
                         }
                     }
                 }
-
             }
             added.replace(q.peekFirst().data, true);
             q.pollFirst();
@@ -115,15 +165,15 @@ class Grammar {
             // чистка
             q.removeIf(t -> added.get(t.data));
 
-            //if(q.isEmpty())
-              //  nothingToAdd = true;
+            if(q.isEmpty())
+                nothingToAdd = true;
             i++;
-        } while (!nothingToAdd && i < 3);
+        } while (!nothingToAdd);
 
         System.out.println();
         System.out.println(set);
 
-        return J;
+        return set;
     }
 
 
