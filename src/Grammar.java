@@ -1,4 +1,5 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 class Grammar {
@@ -20,6 +21,18 @@ class Grammar {
 
 
     public static void main(String[] args) throws IOException {
+
+/*
+        ArrayDeque<String> q = new ArrayDeque<>();
+        q.add("E");
+        q.add("T");
+        System.out.println(q);
+        //q.pollFirst();
+        q.getFirst();
+        System.out.println(q);
+
+ */
+
         Grammar g = new Grammar("example10.txt");
         g.printGrammar();
         g.augmentGivenGrammar();
@@ -31,8 +44,7 @@ class Grammar {
         System.out.println();
         System.out.println(start);
         System.out.println();
-        System.out.println(g.closure(C));
-
+        g.closure(C);
 
     }
 
@@ -53,30 +65,63 @@ class Grammar {
 
     HashSet<Production> closure(HashSet<Production> I){
         LinkedHashSet<Production> J = new LinkedHashSet<Production>(I);
-        Boolean added[] = new Boolean[Productions.size()];
-        boolean nothingToAdd = true;
+        HashMap<String, Boolean> added = new HashMap<>();
+        for (Token tok : NonTerminals)
+            added.put(tok.data, false);
 
+        boolean nothingToAdd = false;
+
+
+        ArrayList<Production> set = new ArrayList<>();
+        Production firstProd = I.iterator().next();
+        set.add(firstProd);
+        //Token next = firstProd.get(1);
+        ArrayDeque<Token> q = new ArrayDeque<>();
+
+        q.addFirst(firstProd.get(1));
+
+        int i = 0;
         do {
-            //каждый пункт из J
-            Iterator iterator = J.iterator();
-            while (iterator.hasNext())  {
-                // A -> a Х B b
-                Production pro = (Production) iterator.next();
-                Token B = pro.definitions.get(pro.definitions.indexOf(new Token("Х", "DOT")) + 1);
+            System.out.println();
+            System.out.println("STEP " + i);
+            System.out.println("ќчередь : " + q);
+            System.out.println("Set: " + set);
+            for(Production pro : Productions){
+                System.out.println();
+                System.out.println(pro);
+                System.out.println(pro.nonTerminal + " " + q.peekFirst() + (pro.nonTerminal == q.peekFirst()));
+                if(pro.nonTerminal.data.equals(q.peekFirst().data)){
+                    Production t = createItem(0, pro);
+                    if(!set.contains(t)) {
+                        set.add(t);
+                        System.out.println(t.definitions);
+                        Token tok = t.definitions.get(1);
 
-                for (Production A : Productions) {
-                    if (A.nonTerminal.equals(B)) {
+                        if(!tok.type.equals("TERMINAL"))
+                            System.out.println("“окен " + tok.data + " " + added.get(tok.data));
 
-                        J.add(createItem(0, A));
-                        if(A.definitions.indexOf(new Token("Х", "DOT")) != A.definitions.size()){
-                            nothingToAdd = false;
+
+                        if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
+                            System.out.println("ƒобавлен " + tok.data);
+                            q.addLast(tok);
                         }
                     }
                 }
-            }
-        } while (!nothingToAdd);
-        
 
+            }
+            added.replace(q.peekFirst().data, true);
+            q.pollFirst();
+
+            // чистка
+            q.removeIf(t -> added.get(t.data));
+
+            //if(q.isEmpty())
+              //  nothingToAdd = true;
+            i++;
+        } while (!nothingToAdd && i < 3);
+
+        System.out.println();
+        System.out.println(set);
 
         return J;
     }
