@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Objects;
 
 class Production {
     Token nonTerminal;
@@ -65,5 +66,33 @@ class Production {
         }
         return result;
     }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Production that = (Production) o;
+
+        if (!nonTerminal.data.equals(that.nonTerminal.data))
+            return false;
+
+        if(definitions.size() != that.definitions.size())
+            return false;
+
+        for (int i = 0; i < definitions.size(); i++) {
+            if(!definitions.get(i).data.equals(that.definitions.get(i).data))
+                return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nonTerminal, definitions);
+    }
+
+
 
 }
