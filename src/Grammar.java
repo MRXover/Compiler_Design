@@ -55,22 +55,7 @@ class Grammar {
         g.GoTo(C, new Token("+", "TERMINAL"));
  */
 
-/*
-        Готовый тестовый пример для CLOSURE
 
-        Grammar g = new Grammar("example10.txt");
-        g.printGrammar();
-        g.augmentGivenGrammar();
-        g.printGrammar();
-
-        ArrayList<Production> C = new ArrayList<Production>();
-        Production start = g.createItem(0, g.Productions.get(0));
-        C.add(start);
-        System.out.println();
-        System.out.println(start);
-        System.out.println();
-        g.closure(C);
- */
 
     }
 
@@ -90,12 +75,9 @@ class Grammar {
     }
 
     ArrayList<Production> GoTo(ArrayList<Production> I, Token X){
-        ArrayList<Production> J = new ArrayList<Production>();
+        ArrayList<Production> J = new ArrayList<>();
 
-        System.out.println();
-        System.out.println("GOTO");
         for(Production pro : I){
-            System.out.println(pro);
             if(pro.definitions.contains(X)){
 
                 Production temp = new Production(pro.nonTerminal);
@@ -104,27 +86,20 @@ class Grammar {
                 temp.definitions.set(indexOfDot, temp.definitions.get(indexOfDot + 1));
                 temp.definitions.set(indexOfDot + 1, new Token("•", "DOT"));
 
-                System.out.println(temp);
-
                 ArrayList<Production> p = new ArrayList<>();
                 p.add(temp);
                 J.addAll(closure(p));
             }
         }
-
-        System.out.println("J = ");
-        System.out.println(J);
         return J;
     }
 
-
-
+    // Множество считается только для первой продукции из передаваемого списка
+    // Возможно, стоит изменить входной параметр, либо же добавить цикл по списку
     ArrayList<Production> closure(ArrayList<Production> I){
         HashMap<String, Boolean> added = new HashMap<>();
         for (Token tok : NonTerminals)
             added.put(tok.data, false);
-
-        boolean nothingToAdd = false;
 
         ArrayList<Production> set = new ArrayList<>();
         Production firstProd = I.iterator().next();
@@ -132,28 +107,15 @@ class Grammar {
         ArrayDeque<Token> q = new ArrayDeque<>();
         q.addFirst(firstProd.get(firstProd.definitions.indexOf(new Token("•", "DOT")) + 1));
 
-        int i = 0;
         do {
-            System.out.println();
-            System.out.println("STEP " + i);
-            System.out.println("Очередь : " + q);
-            System.out.println("Set: " + set);
             for(Production pro : Productions){
-                System.out.println();
-                System.out.println(pro);
-                System.out.println(pro.nonTerminal + " " + q.peekFirst() + (pro.nonTerminal == q.peekFirst()));
                 if(pro.nonTerminal.data.equals(q.peekFirst().data)){
                     Production t = createItem(0, pro);
                     if(!set.contains(t)) {
                         set.add(t);
-                        System.out.println(t.definitions);
                         Token tok = t.definitions.get(t.definitions.indexOf(new Token("•", "DOT")) + 1);
 
-                        if(!tok.type.equals("TERMINAL"))
-                            System.out.println("Токен " + tok.data + " " + added.get(tok.data));
-
                         if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
-                            System.out.println("Добавлен " + tok.data);
                             q.addLast(tok);
                         }
                     }
@@ -165,13 +127,7 @@ class Grammar {
             // чистка
             q.removeIf(t -> added.get(t.data));
 
-            if(q.isEmpty())
-                nothingToAdd = true;
-            i++;
-        } while (!nothingToAdd);
-
-        System.out.println();
-        System.out.println(set);
+        } while (!q.isEmpty());
 
         return set;
     }
