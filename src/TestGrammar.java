@@ -3,8 +3,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static org.junit.Assert.fail;
-
 public class TestGrammar {
     private Grammar grammar;
     private ArrayList<Token> arr;

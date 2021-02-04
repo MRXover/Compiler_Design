@@ -132,12 +132,15 @@ class Grammar {
         return set;
     }
 
-
     Production createItem(int index, Production p){
         Production pro = new Production(p.nonTerminal);
         pro.definitions.addAll(p.definitions);
         pro.definitions.add(index, new Token("•", "DOT"));
         return pro;
+    }
+
+    void LRParser(ArrayList<Production> string){
+
     }
 
     //============================== LR ==============================
@@ -182,6 +185,27 @@ class Grammar {
             if(pro.nonTerminal.data.equals(pro.get(0).data))
                 return true;
         return false;
+    }
+
+
+    ArrayList<Token> Lexer(String input){
+        ArrayList<Token> program = new ArrayList<>();
+        String tok = "";
+        for (int i = 0; i < input.length(); i++) {
+            if(input.charAt(i) == ' ')
+                continue;
+
+            tok += input.charAt(i);
+            for(Token t : Terminals){
+                if(t.data.equals(tok)){
+
+                    program.add(t);
+                    tok = "";
+                }
+            }
+        }
+
+        return program;
     }
 
     void Parse(String str){
