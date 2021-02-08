@@ -1,4 +1,4 @@
-
+import java.util.Objects;
 
 public class Token {
     String data;
@@ -47,6 +47,8 @@ public class Token {
         return data.equals(token.data) && type.equals(token.type);
     }
 
-
-
+    @Override
+    public int hashCode() {
+        return Objects.hash(data, type);
+    }
 }

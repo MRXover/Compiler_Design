@@ -12,13 +12,11 @@ public class TestLR {
         grammar.augmentGivenGrammar();
 
         ArrayList<Production> expected = new ArrayList<>();
-        ArrayList<Production> C = new ArrayList<>();
 
         for(Production pro : grammar.Productions)
             expected.add(grammar.createItem(0, pro));
 
-        C.add(expected.get(0));
-        ArrayList<Production> result = grammar.closure(C);
+        ArrayList<Production> result = grammar.closure(expected.get(0));
 
         for(int i = 0; i < expected.size(); i++){
             //System.out.println(expected.get(i) + " == " + result.get(i));
@@ -52,6 +50,48 @@ public class TestLR {
     }
 
 
-    
+    @Test
+    public void testGoTo1() throws IOException {
+        grammar = new Grammar("example10.txt");
+        grammar.augmentGivenGrammar();
+
+        ArrayList<Production> C = new ArrayList<>();
+        Production p1 = grammar.createItem(0, grammar.Productions.get(0));
+        Production p2 = grammar.createItem(1, grammar.Productions.get(1));
+        //C.add(p1);
+        //C.add(p2);
+        C = grammar.closure(p1);
+
+        System.out.println("P1 = " + p1);
+        System.out.println("P2 = " + p2);
+
+        ArrayList<Production> result = grammar.GoTo(C, new Token("T", "NONTERMINAL"));
+        System.out.println(result);
+    }
+
+
+
+    @Test
+    public void testLRParser() throws IOException {
+        grammar = new Grammar("example10.txt");
+        grammar.augmentGivenGrammar();
+
+        ArrayList<Token> input = grammar.Lexer("ID * ID");
+
+        grammar.LRParser(input);
+
+    }
+
+    @Test
+    public void testBuildAllItems() throws IOException {
+        grammar = new Grammar("example10.txt");
+        grammar.augmentGivenGrammar();
+
+        grammar.buildAllItems();
+
+
+    }
+
+
 
 }

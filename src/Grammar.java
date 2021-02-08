@@ -4,6 +4,8 @@ import java.io.*;
 import java.lang.reflect.Array;
 import java.util.*;
 
+import static java.lang.Math.abs;
+
 class Grammar {
     ArrayList<Token> Terminals;
     ArrayList<Token> NonTerminals;
@@ -23,17 +25,6 @@ class Grammar {
 
 
     public static void main(String[] args) throws IOException {
-
-/*
-        ArrayDeque<String> q = new ArrayDeque<>();
-        q.add("E");
-        q.add("T");
-        System.out.println(q);
-        //q.pollFirst();
-        q.getFirst();
-        System.out.println(q);
-
- */
 
 /*
         √отовый тестовый пример дл€ GOTO и дл€ CLOSURE тоже
@@ -83,29 +74,45 @@ class Grammar {
                 Production temp = new Production(pro.nonTerminal);
                 temp.definitions.addAll(pro.definitions);
                 int indexOfDot = temp.definitions.indexOf(new Token("Х", "DOT"));
+
+                if(indexOfDot + 1 == temp.definitions.size())
+                    continue;
+
+                if( abs(indexOfDot - temp.definitions.indexOf(X) ) > 1)
+                    continue;
+
+                // если точка правее токена
+                if(indexOfDot > temp.definitions.indexOf(X))
+                    continue;
+
+
                 temp.definitions.set(indexOfDot, temp.definitions.get(indexOfDot + 1));
                 temp.definitions.set(indexOfDot + 1, new Token("Х", "DOT"));
 
-                ArrayList<Production> p = new ArrayList<>();
-                p.add(temp);
-                J.addAll(closure(p));
+
+                //if(closure(temp) != null)
+                    J.addAll(closure(temp));
             }
         }
         return J;
     }
 
-    // ћножество считаетс€ только дл€ первой продукции из передаваемого списка
-    // ¬озможно, стоит изменить входной параметр, либо же добавить цикл по списку
-    ArrayList<Production> closure(ArrayList<Production> I){
+    ArrayList<Production> closure(Production I){
         HashMap<String, Boolean> added = new HashMap<>();
         for (Token tok : NonTerminals)
             added.put(tok.data, false);
 
         ArrayList<Production> set = new ArrayList<>();
-        Production firstProd = I.iterator().next();
-        set.add(firstProd);
+        set.add(I);
         ArrayDeque<Token> q = new ArrayDeque<>();
-        q.addFirst(firstProd.get(firstProd.definitions.indexOf(new Token("Х", "DOT")) + 1));
+        //System.out.println(I);
+        //System.out.println(I.definitions.indexOf(new Token("Х", "DOT")));
+        if(I.definitions.indexOf(new Token("Х", "DOT")) + 1 == I.definitions.size()){
+            set.add(I);
+            return set;
+        }
+
+        q.addFirst(I.get(I.definitions.indexOf(new Token("Х", "DOT")) + 1));
 
         do {
             for(Production pro : Productions){
@@ -139,7 +146,123 @@ class Grammar {
         return pro;
     }
 
-    void LRParser(ArrayList<Production> string){
+    void LRParser(ArrayList<Token> Input){
+
+        ArrayList<Token> input = new ArrayList<>(Input);
+        Input.add(new Token("$", "END_MARKER"));
+
+        ArrayList<Token> symbols = new ArrayList<>();
+        symbols.add(new Token("$", "END_MARKER"));
+
+
+        ArrayList<Production> I0 = closure(createItem(0, Productions.get(0)));
+
+        ArrayList<Production> I_j;
+
+        System.out.println(Input);
+
+        Stack<Integer> stack = new Stack<>();
+        stack.push(0);
+
+        Token symbol;
+
+
+
+        for (int i = 1; i < 2; i++) {
+            System.out.println();
+            System.out.println("—“–ќ ј   = " + i);
+            System.out.println("—тек     = " + stack);
+            System.out.println("—имволы  = " + symbols);
+            System.out.println("¬ход     = " + input);
+
+            symbol = input.get(0);
+
+            System.out.println();
+            I_j = GoTo(I0, symbol);
+            System.out.println(symbol + " " + I_j);
+
+
+        }
+
+    }
+
+    void buildAllItems(){
+        int index = 0;
+        int oldIndex = 0;
+        Production p1 = createItem(0, Productions.get(0));
+
+        ArrayList<ArrayList<Production>> items = new ArrayList<>();
+
+        items.add(closure(p1));
+        System.out.println(items);
+
+        ArrayList<Token> tokensToCheck = new ArrayList<>();
+
+        for(Production pro : items.get(0)){
+            int ind = pro.getIndexOfDot();
+            if(ind + 1 == pro.definitions.size())
+                continue;
+            Token t = pro.definitions.get(ind + 1);
+            if(!tokensToCheck.contains(t))
+                tokensToCheck.add(t);
+        }
+
+        // 1st Iteration
+        for(Token tok : tokensToCheck){
+            items.add(removeDuplicates(GoTo(items.get(0), tok)));
+            index++;
+            System.out.println(index + " " +tok.data + " = " + removeDuplicates(GoTo(items.get(0), tok)));
+        }
+        oldIndex = index;
+        int left = 1;
+        System.out.println(index);
+
+        tokensToCheck.clear();
+
+
+        do{
+
+            for (int i = left; i < oldIndex + 1; i++) {
+                for (Production pro : items.get(i)) {
+                    int ind = pro.getIndexOfDot();
+                    if (ind + 1 == pro.definitions.size())
+                        continue;
+                    Token t = pro.definitions.get(ind + 1);
+                    if (!tokensToCheck.contains(t))
+                        tokensToCheck.add(t);
+                }
+
+                //System.out.println("iter " + index + " = " + tokensToCheck);
+
+                for (Token t : tokensToCheck) {
+                    ArrayList<Production> X = removeDuplicates(GoTo(items.get(i), t));
+                    if (index == 8) {
+                        System.out.println();
+                        System.out.println(i + " = " + items.get(i));
+                        System.out.println();
+                    }
+                    System.out.println("iter " + index + " = " + tokensToCheck + " X [" + t.data + "] = " + X);
+                    if (!items.contains(X)) {
+                        System.out.println("ƒобавлен [" + t.data + "] = " + X);
+                        items.add(X);
+                        index++;
+                    }
+                }
+                tokensToCheck.clear();
+            }
+            left = oldIndex;
+            oldIndex = index;
+
+        } while( left != index);
+
+
+
+        System.out.println(index);
+        for (int i = 0; i < items.size(); i++) {
+            System.out.println(i + " = " + items.get(i));
+        }
+
+
 
     }
 
@@ -198,7 +321,6 @@ class Grammar {
             tok += input.charAt(i);
             for(Token t : Terminals){
                 if(t.data.equals(tok)){
-
                     program.add(t);
                     tok = "";
                 }

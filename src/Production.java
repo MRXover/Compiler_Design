@@ -57,6 +57,14 @@ class Production {
         return result;
     }
 
+    int getIndexOfDot(){
+        for (int i = 0; i < definitions.size(); i++) {
+            if(definitions.get(i).type.equals("DOT"))
+                return i;
+        }
+        return -1;
+    }
+
     
     @Override
     public String toString(){
