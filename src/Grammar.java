@@ -22,7 +22,8 @@ class Grammar {
     HashMap<String, HashMap<String, Production>> SyntaxMatrix;
 
     //HashSet<Production> closure;
-
+    ArrayList<ArrayList<Production>> items;
+    HashMap<Token, ArrayList<Token>> FollowLR;
 
     public static void main(String[] args) throws IOException {
 
@@ -67,10 +68,8 @@ class Grammar {
 
     ArrayList<Production> GoTo(ArrayList<Production> I, Token X){
         ArrayList<Production> J = new ArrayList<>();
-
         for(Production pro : I){
             if(pro.definitions.contains(X)){
-
                 Production temp = new Production(pro.nonTerminal);
                 temp.definitions.addAll(pro.definitions);
                 int indexOfDot = temp.definitions.indexOf(new Token("•", "DOT"));
@@ -85,13 +84,10 @@ class Grammar {
                 if(indexOfDot > temp.definitions.indexOf(X))
                     continue;
 
-
                 temp.definitions.set(indexOfDot, temp.definitions.get(indexOfDot + 1));
                 temp.definitions.set(indexOfDot + 1, new Token("•", "DOT"));
 
-
-                //if(closure(temp) != null)
-                    J.addAll(closure(temp));
+                J.addAll(closure(temp));
             }
         }
         return J;
@@ -149,9 +145,10 @@ class Grammar {
     void LRParser(ArrayList<Token> Input){
 
         ArrayList<Token> input = new ArrayList<>(Input);
-        Input.add(new Token("$", "END_MARKER"));
+        input.add(new Token("$", "END_MARKER"));
 
         ArrayList<Token> symbols = new ArrayList<>();
+        symbolsForACTION = new ArrayList<>();
         symbols.add(new Token("$", "END_MARKER"));
 
 
@@ -164,22 +161,49 @@ class Grammar {
         Stack<Integer> stack = new Stack<>();
         stack.push(0);
 
-        Token symbol;
+        Token a = input.get(0);
+        int pointer = 0;
 
+        buildAllItems();
 
+        for (int i = 1; i < 10; i++) {
+            int s = stack.peek();
 
-        for (int i = 1; i < 2; i++) {
             System.out.println();
             System.out.println("СТРОКА   = " + i);
             System.out.println("Стек     = " + stack);
             System.out.println("Символы  = " + symbols);
             System.out.println("Вход     = " + input);
+            System.out.println("s = " + s + " --- a = " + a.data);
 
-            symbol = input.get(0);
 
-            System.out.println();
-            I_j = GoTo(I0, symbol);
-            System.out.println(symbol + " " + I_j);
+            int action = ACTION1(s, a);
+            if ( action == 1){
+                symbols.add(input.get(pointer));
+                symbolsForACTION.add(input.get(pointer));
+                stack.push(t);
+                prevToken = input.get(pointer);
+                pointer++;
+                a = input.get(pointer);
+                //input.remove(0);
+                System.out.println("Перенос в " + t);
+            }
+            else if (action == 2){
+                stack.pop();
+                System.out.println("Свертка по " + reduce.nonTerminal.data + " -> " + reduce.definitions);
+                int count = reduce.definitions.size();
+                for (int j = 0; j < count; j++){
+                    symbols.remove(symbols.size() - 1);
+                    symbolsForACTION.remove(symbolsForACTION.size() - 1);
+                }
+                symbols.add(reduce.nonTerminal);
+                symbolsForACTION.add(reduce.nonTerminal);
+                stack.push(getIndexFromGoTo(items.get(stack.peek()), reduce.nonTerminal));
+
+            } else if(action == 3){
+                System.out.println("SUCCESS");
+                break;
+            }
 
 
         }
@@ -191,10 +215,9 @@ class Grammar {
         int oldIndex = 0;
         Production p1 = createItem(0, Productions.get(0));
 
-        ArrayList<ArrayList<Production>> items = new ArrayList<>();
-
+        items = new ArrayList<>();
+        // I0
         items.add(closure(p1));
-        System.out.println(items);
 
         ArrayList<Token> tokensToCheck = new ArrayList<>();
 
@@ -211,17 +234,14 @@ class Grammar {
         for(Token tok : tokensToCheck){
             items.add(removeDuplicates(GoTo(items.get(0), tok)));
             index++;
-            System.out.println(index + " " +tok.data + " = " + removeDuplicates(GoTo(items.get(0), tok)));
+            //System.out.println(index + " " +tok.data + " = " + removeDuplicates(GoTo(items.get(0), tok)));
         }
         oldIndex = index;
         int left = 1;
-        System.out.println(index);
 
         tokensToCheck.clear();
 
-
         do{
-
             for (int i = left; i < oldIndex + 1; i++) {
                 for (Production pro : items.get(i)) {
                     int ind = pro.getIndexOfDot();
@@ -231,19 +251,9 @@ class Grammar {
                     if (!tokensToCheck.contains(t))
                         tokensToCheck.add(t);
                 }
-
-                //System.out.println("iter " + index + " = " + tokensToCheck);
-
                 for (Token t : tokensToCheck) {
                     ArrayList<Production> X = removeDuplicates(GoTo(items.get(i), t));
-                    if (index == 8) {
-                        System.out.println();
-                        System.out.println(i + " = " + items.get(i));
-                        System.out.println();
-                    }
-                    System.out.println("iter " + index + " = " + tokensToCheck + " X [" + t.data + "] = " + X);
                     if (!items.contains(X)) {
-                        System.out.println("Добавлен [" + t.data + "] = " + X);
                         items.add(X);
                         index++;
                     }
@@ -252,18 +262,142 @@ class Grammar {
             }
             left = oldIndex;
             oldIndex = index;
-
         } while( left != index);
 
+        //for (int i = 0; i < items.size(); i++) System.out.println(i + " = " + items.get(i));
+    }
+
+    int getIndexFromGoTo(ArrayList<Production> I, Token X){
+        ArrayList<Production> wanted = removeDuplicates(GoTo(I, X));
+        for(int i = 0; i < items.size(); i++){
+            if(items.get(i).equals(wanted))
+                return i;
+        }
+        return -1;
+    }
 
 
-        System.out.println(index);
-        for (int i = 0; i < items.size(); i++) {
-            System.out.println(i + " = " + items.get(i));
+
+    // si  - перенос и размещение в стеке состояния i
+    // r   - свёртка по продукции:
+    Production reduce;
+    // acc - принятие
+    // Err - ошибка
+    String ACTION(int i, Token a){
+
+        // Очень сомнительное условие
+        // UPD: страница 324 пункт в)     нужно переписать
+        if(a.data.equals("$") && i == 1){
+            System.out.println("ACTION( " + i + ", " + a.data + ") = acc");
+            return "acc";
         }
 
+        int state = -1;
+        if(i != -1)
+            state = getIndexFromGoTo(items.get(i),a);
+        if(state != -1){
+            t = state;
+            System.out.println("ACTION( " + i + ", " + a.data + ") = s" + t);
+            return "s" + t;
+        }
+
+        // разве по первой продукции?...
+        Token t = items.get(i).get(0).nonTerminal;
+
+        ArrayList<Token> f = FollowLR.get(t);
+        for (Token tok : f) {
+            if (tok.data.equals(a.data)) {
+                for(Production pro : items.get(i)) {
+                    if (pro.getIndexOfDot() + 1 == pro.definitions.size()) {
+                        if (pro.nonTerminal.equals(t)) {
+                            Production wanted = new Production(pro);
+                            wanted.definitions.remove(wanted.getIndexOfDot());
+                            System.out.println("ACTION( " + i + ", " + a.data + ") = r" + Productions.indexOf(wanted));
+                            return "r" + Productions.indexOf(wanted);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        return "Err";
+    }
+
+    void buildFollowLR(){
+        FollowLR = new HashMap<>();
+        for(Token t : NonTerminals){
+            FollowLR.put(t, removeDuplicates(FollowLR(t, null)));
+        }
+    }
+
+    ArrayList<Token> FollowLR(Token t, Token prev){
+        System.out.println("t= " + t + " prev = " + prev);
+        if(t.equals(prev))
+            return new ArrayList<>();
+
+        ArrayList<Token> result = new ArrayList<Token>();
+        if(t.type.equals("TERMINAL")){
+            result.add(t);
+            return result;
+        }
+        // if t = start symbol of augmented grammar
+        if(t.equals(NonTerminals.get(1))){
+            result.add(new Token("$", "END_MARKER"));
+        }
+
+        for (Production pro : Productions){
+            if(pro.definitions.contains(t)){
+                if(FollowLR.get(pro.nonTerminal) != null)
+                    result.addAll(FollowLR.get(pro.nonTerminal));
+                int position = pro.definitions.lastIndexOf(t);
+                if(position + 1 != pro.definitions.size()){
+                    result.addAll(FollowLR(pro.definitions.get(position + 1), t));
+                }
+            }
+        }
+        return result;
+    }
 
 
+
+
+
+
+    int t;
+
+    Token prevToken;
+    ArrayList<Token> symbolsForACTION;
+    // 1 = Shift  - перенос
+    // 2 = Reduce - свёртка
+    // 3 = Accept - принятие
+    // 4 = Error  - ошибка
+    int ACTION1(int i, Token a){
+        int state = -1;
+        if(i != -1)
+            state = getIndexFromGoTo(items.get(i),a);
+        if(state != -1){
+            t = state;
+            return 1;
+        } else {
+
+            ArrayList<Token> partToFind = new ArrayList<>(symbolsForACTION);
+            //System.out.println(symbolsForACTION);
+            for (int j = symbolsForACTION.size() - 1; j >= 0; j--) {
+                for (Production pro : Productions) {
+                    if (pro.definitions.equals(partToFind)) {
+                        System.out.println(partToFind);
+                        reduce = pro;
+                        return 2;
+                    }
+                }
+                partToFind.remove(0);
+            }
+        }
+        if(a.equals(new Token("$", "END_MARKER")))
+            return 3;
+
+        return 4;
     }
 
     //============================== LR ==============================
@@ -523,6 +657,7 @@ class Grammar {
                             break;
                         }
                         Token[] FirstYi = First(Yi);
+
                         if(inTokenArray(FirstYi, new Token("#", "EPSILON")) == -1){
                             allProductionsHasEps = false;
                         }

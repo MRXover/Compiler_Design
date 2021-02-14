@@ -39,6 +39,9 @@ public class Controller {
     @FXML
     public Button SaveFile;
 
+    @FXML
+    public Button MakeActionTable;
+
 
     @FXML
     void initialize() {
@@ -134,6 +137,80 @@ public class Controller {
 
             newWindow.show();
 
+        });
+
+        MakeActionTable.setOnAction(event -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+
+            Grammar.augmentGivenGrammar();
+            Grammar.buildAllItems();
+
+
+            Stage newWindow = new Stage();
+            GridPane root = new GridPane();
+
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            root.setPadding(new Insets(20));
+            root.setHgap(25);
+            root.setVgap(15);
+
+
+            int leftNonTerminalsPosition  = Grammar.Terminals.size();
+            int rightNonTerminalsPosition =  Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
+
+            for (int i = 0; i < Grammar.Terminals.size(); i++) {
+                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
+            }
+            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
+                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
+            }
+
+
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
+                root.add(new Label(String.valueOf(i)), 0, i+1);
+            }
+
+            // GOTO
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
+                    int result = Grammar.getIndexFromGoTo(Grammar.items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+                    if( result == -1)
+                        root.add(new Label(" "), j, i+1);
+                    else
+                        root.add(new Label(String.valueOf(result)), j, i+1);
+                }
+            }
+
+            // ACTION
+            Grammar.buildFollowLR();
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
+                    Token a;
+                    if(j != Grammar.Terminals.size())
+                        a = Grammar.Terminals.get(j - 1);
+                    else
+                        a = new Token("$", "END_MARKER");
+
+                    String result = Grammar.ACTION(i, a);
+                    if(result.equals("Err"))
+                        root.add(new Label(" "), j + 1, i+1);
+                    else
+                        root.add(new Label(result), j, i+1);
+                }
+            }
+
+            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("ACTION and GOTO table");
+            newWindow.setScene(scene);
+
+            newWindow.show();
         });
 
         LoadFile.setOnAction(actionEvent -> {

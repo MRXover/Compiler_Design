@@ -17,6 +17,10 @@ class Production {
         definitions.add(new Token("#", "EPSILON"));
     }
 
+    Production(Production pro){
+        nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
+        definitions = new ArrayList<>(pro.definitions);
+    }
 
     Production add(Token token){
         definitions.add(token);

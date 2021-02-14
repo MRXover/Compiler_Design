@@ -88,10 +88,16 @@ public class TestLR {
         grammar.augmentGivenGrammar();
 
         grammar.buildAllItems();
+    }
+
+    @Test
+    public void testACTION() throws IOException {
+        grammar = new Grammar("example10.txt");
+        grammar.augmentGivenGrammar();
+
 
 
     }
-
 
 
 }
