@@ -1,3 +1,9 @@
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 import org.w3c.dom.ls.LSOutput;
 
 import java.io.*;
@@ -142,7 +148,22 @@ class Grammar {
         return pro;
     }
 
-    void LRParser(ArrayList<Token> Input){
+    public void LRParser(ArrayList<Token> Input){
+        Stage newWindow = new Stage();
+        GridPane root = new GridPane();
+
+        newWindow.setX(200);
+        newWindow.setY(100);
+
+        root.setPadding(new Insets(20));
+        root.setHgap(25);
+        root.setVgap(15);
+
+        root.add(new Label("Строка"), 0, 0);
+        root.add(new Label("Стек"), 1, 0);
+        root.add(new Label("Символы"), 2, 0);
+        root.add(new Label("Вход"), 3, 0);
+        root.add(new Label("Действие"), 4, 0);
 
         ArrayList<Token> input = new ArrayList<>(Input);
         input.add(new Token("$", "END_MARKER"));
@@ -150,11 +171,6 @@ class Grammar {
         ArrayList<Token> symbols = new ArrayList<>();
         symbolsForACTION = new ArrayList<>();
         symbols.add(new Token("$", "END_MARKER"));
-
-
-        ArrayList<Production> I0 = closure(createItem(0, Productions.get(0)));
-
-        ArrayList<Production> I_j;
 
         System.out.println(Input);
 
@@ -166,48 +182,67 @@ class Grammar {
 
         buildAllItems();
 
-        for (int i = 1; i < 10; i++) {
+        int stringIndex = 1;
+
+        while (true) {
             int s = stack.peek();
 
-            System.out.println();
-            System.out.println("СТРОКА   = " + i);
-            System.out.println("Стек     = " + stack);
-            System.out.println("Символы  = " + symbols);
-            System.out.println("Вход     = " + input);
-            System.out.println("s = " + s + " --- a = " + a.data);
+            root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
+            root.add(new Label(String.valueOf(stack)), 1, stringIndex);
 
+            String symbolsString = "";
+            for(Token t : symbols)
+                symbolsString += t.data;
 
-            int action = ACTION1(s, a);
-            if ( action == 1){
+            root.add(new Label(symbolsString), 2, stringIndex);
+
+            String inputString = "";
+            for(Token t : input.subList(pointer, input.size()))
+                inputString += t.data;
+            root.add(new Label(inputString), 3, stringIndex);
+
+            String action = ACTION(s, a);
+            if ( action.charAt(0) == 's'){
                 symbols.add(input.get(pointer));
-                symbolsForACTION.add(input.get(pointer));
                 stack.push(t);
-                prevToken = input.get(pointer);
                 pointer++;
                 a = input.get(pointer);
-                //input.remove(0);
                 System.out.println("Перенос в " + t);
-            }
-            else if (action == 2){
-                stack.pop();
-                System.out.println("Свертка по " + reduce.nonTerminal.data + " -> " + reduce.definitions);
-                int count = reduce.definitions.size();
+                root.add(new Label("Перенос в " + t), 4, stringIndex);
+            } else if (action.charAt(0) == 'r'){
+                int prodNumber = Integer.parseInt(action.substring(1, action.length()));
+                String shift = "Свертка по " + Productions.get(prodNumber).nonTerminal.data + " -> ";
+                for (Token t : Productions.get(prodNumber).definitions){
+                    shift += t.data;
+                    stack.pop();
+                }
+                System.out.println(shift);
+                root.add(new Label(shift), 4, stringIndex);
+                int count = Productions.get(prodNumber).definitions.size();
                 for (int j = 0; j < count; j++){
                     symbols.remove(symbols.size() - 1);
-                    symbolsForACTION.remove(symbolsForACTION.size() - 1);
                 }
-                symbols.add(reduce.nonTerminal);
-                symbolsForACTION.add(reduce.nonTerminal);
-                stack.push(getIndexFromGoTo(items.get(stack.peek()), reduce.nonTerminal));
-
-            } else if(action == 3){
+                symbols.add(Productions.get(prodNumber).nonTerminal);
+                stack.push(getIndexFromGoTo(items.get(stack.peek()), Productions.get(prodNumber).nonTerminal));
+            } else if(action.charAt(0) == 'a'){
                 System.out.println("SUCCESS");
+                root.add(new Label("SUCCESS"), 4, stringIndex);
+                break;
+            } else if(action.charAt(0) == 'e'){
+                System.out.println("ERROR");
                 break;
             }
-
+            stringIndex++;
 
         }
 
+        ScrollPane scrollPane = new ScrollPane(root);
+
+        Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
+        newWindow.setTitle("LR Parse table");
+        newWindow.setScene(scene);
+
+        newWindow.show();
     }
 
     void buildAllItems(){
@@ -302,6 +337,10 @@ class Grammar {
         }
 
         // разве по первой продукции?...
+        System.out.println("i=" + i + " a=" + a.data);
+        if(i == -1)
+            return "err";
+
         Token t = items.get(i).get(0).nonTerminal;
 
         ArrayList<Token> f = FollowLR.get(t);

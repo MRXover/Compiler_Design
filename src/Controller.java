@@ -41,6 +41,8 @@ public class Controller {
 
     @FXML
     public Button MakeActionTable;
+    @FXML
+    public Button ParseLR;
 
 
     @FXML
@@ -148,10 +150,8 @@ public class Controller {
             Grammar.augmentGivenGrammar();
             Grammar.buildAllItems();
 
-
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
-
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -211,6 +211,12 @@ public class Controller {
             newWindow.setScene(scene);
 
             newWindow.show();
+        });
+
+        ParseLR.setOnAction(event -> {
+            Grammar.augmentGivenGrammar();
+            Grammar.buildFollowLR();
+            Grammar.LRParser(Grammar.Lexer("ID * ID* ID* ID* ID+ID* ID* ID"));
         });
 
         LoadFile.setOnAction(actionEvent -> {

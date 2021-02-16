@@ -42,6 +42,11 @@
                   <Font name="Segoe UI" size="14.0" />
                </font>
             </Button>
+            <Button fx:id="ParseLR" layoutX="218.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="LR Parse">
+               <font>
+                  <Font name="Segoe UI" size="14.0" />
+               </font>
+            </Button>
          </children>
       </AnchorPane>
       <Label layoutX="724.0" layoutY="14.0" prefHeight="43.0" prefWidth="262.0" text="Compiler design" textFill="WHITE">
