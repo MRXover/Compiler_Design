@@ -15,27 +15,27 @@ public class Controller {
 
     private Grammar Grammar;
 
+
     @FXML
     public TextArea LogConsole;
     @FXML
     public TextArea GrammarArea;
+    @FXML
+    public TextArea CodeArea;
 
     @FXML
     public Button Clean;
     @FXML
     public Button LoadGrammar;
-    @FXML
-    public Button MakeFirstAndFollow;
-    @FXML
-    public Button MakeSyntaxMatrix;
+
+
     @FXML
     public Button LoadFile;
     @FXML
     private Button isLeftRecursive;
     @FXML
     private Button LeftFactoring;
-    @FXML
-    public Button Parse;
+
     @FXML
     public Button SaveFile;
 
@@ -43,6 +43,19 @@ public class Controller {
     public Button MakeActionTable;
     @FXML
     public Button ParseLR;
+
+    @FXML
+    private MenuBar menuBar;
+    @FXML
+    private MenuItem LoadFromFile;
+    @FXML
+    private MenuItem MakeFirstAndFollow;
+    @FXML
+    private MenuItem MakeSyntaxMatrix;
+    @FXML
+    private MenuItem LLParse;
+    @FXML
+    private MenuItem TEST;
 
 
     @FXML
@@ -53,26 +66,7 @@ public class Controller {
             LogConsole.appendText("Grammar area was cleaned\n");
         });
 
-        MakeFirstAndFollow.setOnAction(actionEvent -> {
-            if(Grammar == null) {
-                LogConsole.appendText("Grammar is not loaded\n");
-                return;
-            }
-            if(Grammar.isLeftRecursive()) {
-                LogConsole.appendText("Grammar is Left Recursive\nPlease, make left factorization of your grammar\n");
-                return;
-            }
-            try {
-                Grammar.makeFirstSet();
-                Grammar.makeFollowSet();
 
-                Grammar.printFirstSet();
-                System.out.println();
-                Grammar.printFollowSet();
-            } catch (Exception e){
-                LogConsole.appendText(e.getMessage());
-            }
-        });
 
         isLeftRecursive.setOnAction(actionEvent -> {
             if(Grammar == null){
@@ -82,64 +76,8 @@ public class Controller {
             LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
         });
 
-        Parse.setOnAction(actionEvent -> {
-            if(Grammar == null) {
-                LogConsole.appendText("Grammar is not loaded\n");
-                return;
-            }
-            Grammar.Parse(GrammarArea.getText());
-        });
 
-        MakeSyntaxMatrix.setOnAction(actionEvent -> {
-            if(Grammar == null) {
-                LogConsole.appendText("Grammar is not loaded\n");
-                return;
-            }
-            if(Grammar.FirstSet == null){
-                LogConsole.appendText("Make FIRST and FOLLOW\n");
-                return;
-            }
 
-            Grammar.makeSyntaxMatrix();
-            Stage newWindow = new Stage();
-            GridPane root = new GridPane();
-            //root.setGridLinesVisible(true);
-
-            newWindow.setX(200);
-            newWindow.setY(100);
-
-            root.setPadding(new Insets(20));
-            root.setHgap(25);
-            root.setVgap(15);
-
-            for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
-                //GridPane.setHalignment(new Label(String.valueOf(Grammar.NonTerminals[i])), HPos.LEFT);
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i).data)), 0, i + 1);
-            }
-            for (int i = 0; i < Grammar.Terminals.size(); i++) {
-                //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i + 1, 0);
-            }
-
-            for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
-                for (int j = 0; j < Grammar.Terminals.size(); j++) {
-                    if (Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data) == null) {
-                        GridPane.setHalignment(new Label(""), HPos.LEFT);
-                        root.add(new Label(""), j + 1, i + 1);
-                    } else {
-                        GridPane.setHalignment(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), HPos.LEFT);
-                        root.add(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), j + 1, i + 1);
-                    }
-                }
-            }
-
-            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
-            newWindow.setTitle("Syntax matrix");
-            newWindow.setScene(scene);
-
-            newWindow.show();
-
-        });
 
         MakeActionTable.setOnAction(event -> {
             if(Grammar == null) {
@@ -216,7 +154,7 @@ public class Controller {
         ParseLR.setOnAction(event -> {
             Grammar.augmentGivenGrammar();
             Grammar.buildFollowLR();
-            Grammar.LRParser(Grammar.Lexer("ID * ID* ID* ID* ID+ID* ID* ID"));
+            Grammar.SLRParser(Grammar.Lexer("ID * ID* ID* ID* ID+ID* ID* ID"));
         });
 
         LoadFile.setOnAction(actionEvent -> {
@@ -313,6 +251,131 @@ public class Controller {
 
         LoadGrammar.setOnAction(event -> {
 
+        });
+
+        LoadFromFile.setOnAction(actionEvent -> {
+            Stage Stage = (Stage) menuBar.getScene().getWindow();
+
+            FileChooser fileChooser = new FileChooser();
+            FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
+            fileChooser.getExtensionFilters().add(txtfilter);
+            fileChooser.setTitle("File choosing");
+            fileChooser.setInitialDirectory(new File("./"));
+            File fileObject = fileChooser.showOpenDialog(Stage);
+
+            if(fileObject == null){
+                LogConsole.appendText("Input error\n");
+                return;
+            }
+
+            try {
+                Grammar = new Grammar(this, fileObject.getPath());
+            } catch (Exception e) {
+                LogConsole.appendText("Input error\n");
+                e.printStackTrace();
+            }
+        });
+
+
+        //============================== LL ==============================//
+        MakeFirstAndFollow.setOnAction(actionEvent -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+            if(Grammar.isLeftRecursive()) {
+                LogConsole.appendText("Grammar is Left Recursive\n");
+                LogConsole.appendText("Please, make left factorization of your grammar\n");
+                return;
+            }
+            try {
+                Grammar.makeFirstSet();
+                Grammar.makeFollowSet();
+
+                Grammar.printFirstSet();
+                System.out.println();
+                Grammar.printFollowSet();
+            } catch (Exception e){
+                LogConsole.appendText(e.getMessage());
+            }
+        });
+
+        MakeSyntaxMatrix.setOnAction(actionEvent -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+            if(Grammar.FirstSet == null){
+                Grammar.makeFirstSet();
+                Grammar.makeFollowSet();
+            }
+
+            Grammar.makeSyntaxMatrix();
+            Stage newWindow = new Stage();
+            GridPane root = new GridPane();
+            //root.setGridLinesVisible(true);
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            root.setPadding(new Insets(20));
+            root.setHgap(25);
+            root.setVgap(15);
+
+            for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
+                //GridPane.setHalignment(new Label(String.valueOf(Grammar.NonTerminals[i])), HPos.LEFT);
+                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i).data)), 0, i + 1);
+            }
+            for (int i = 0; i < Grammar.Terminals.size(); i++) {
+                //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
+                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i + 1, 0);
+            }
+
+            for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
+                for (int j = 0; j < Grammar.Terminals.size(); j++) {
+                    if (Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data) == null) {
+                        GridPane.setHalignment(new Label(""), HPos.LEFT);
+                        root.add(new Label(""), j + 1, i + 1);
+                    } else {
+                        GridPane.setHalignment(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), HPos.LEFT);
+                        root.add(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), j + 1, i + 1);
+                    }
+                }
+            }
+
+            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("Syntax matrix");
+            newWindow.setScene(scene);
+
+            newWindow.show();
+
+        });
+
+        LLParse.setOnAction(actionEvent -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+            if(Grammar.FirstSet == null){
+                Grammar.makeFirstSet();
+                Grammar.makeFollowSet();
+            }
+            if(Grammar.SyntaxMatrix == null){
+                Grammar.makeSyntaxMatrix();
+            }
+            Grammar.LL_Parse(Grammar.Lexer(CodeArea.getText()));
+        });
+        //============================== LL ==============================//
+
+
+        TEST.setOnAction(event -> {
+            Grammar.makeFollowSet();
+            Grammar.buildFollowLR();
+            for(Token t : Grammar.NonTerminals){
+                System.out.println(Grammar.follow.get(t));
+                System.out.println(Grammar.FollowLR.get(t));
+                System.out.println();
+            }
         });
     }
 }

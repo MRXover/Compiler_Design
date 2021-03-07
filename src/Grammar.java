@@ -13,10 +13,11 @@ import java.util.*;
 import static java.lang.Math.abs;
 
 class Grammar {
+
+    Token startSymbol;
     ArrayList<Token> Terminals;
     ArrayList<Token> NonTerminals;
 
-    private int countOfProduction;
     ArrayList<Production> Productions;
 
     ArrayList<ArrayList<Token>> FirstSet;
@@ -30,6 +31,8 @@ class Grammar {
     //HashSet<Production> closure;
     ArrayList<ArrayList<Production>> items;
     HashMap<Token, ArrayList<Token>> FollowLR;
+
+    boolean isAugmented;
 
     public static void main(String[] args) throws IOException {
 
@@ -57,7 +60,7 @@ class Grammar {
 
     }
 
-    //============================== LR ==============================
+    //============================== SLR ==============================
 
     void printGrammar(){
         System.out.println();
@@ -68,8 +71,10 @@ class Grammar {
     void augmentGivenGrammar(){
         Token start = new Token(Productions.get(0).nonTerminal.data, "NONTERMINAL");
         start.data += "_st";
+        startSymbol = start;
         Productions.add(0, new Production(start).add(Productions.get(0).nonTerminal));
         NonTerminals.add(0, start);
+        isAugmented = true;
     }
 
     ArrayList<Production> GoTo(ArrayList<Production> I, Token X){
@@ -148,7 +153,7 @@ class Grammar {
         return pro;
     }
 
-    public void LRParser(ArrayList<Token> Input){
+    public void SLRParser(ArrayList<Token> Input){
         Stage newWindow = new Stage();
         GridPane root = new GridPane();
 
@@ -169,7 +174,6 @@ class Grammar {
         input.add(new Token("$", "END_MARKER"));
 
         ArrayList<Token> symbols = new ArrayList<>();
-        symbolsForACTION = new ArrayList<>();
         symbols.add(new Token("$", "END_MARKER"));
 
         System.out.println(Input);
@@ -311,17 +315,15 @@ class Grammar {
         return -1;
     }
 
-
-
     // si  - перенос и размещение в стеке состояния i
     // r   - свёртка по продукции:
-    Production reduce;
     // acc - принятие
     // Err - ошибка
+    int t;
     String ACTION(int i, Token a){
 
         // Очень сомнительное условие
-        // UPD: страница 324 пункт в)     нужно переписать
+        // UPD: страница 324 пункт в)     нужно переписать !!!=====================================
         if(a.data.equals("$") && i == 1){
             System.out.println("ACTION( " + i + ", " + a.data + ") = acc");
             return "acc";
@@ -380,8 +382,7 @@ class Grammar {
             result.add(t);
             return result;
         }
-        // if t = start symbol of augmented grammar
-        if(t.equals(NonTerminals.get(1))){
+        if(t.equals(startSymbol)){
             result.add(new Token("$", "END_MARKER"));
         }
 
@@ -399,82 +400,264 @@ class Grammar {
     }
 
 
+    ///============================= SLR ==============================
 
+    //============================== LL ==============================
 
-
-
-    int t;
-
-    Token prevToken;
-    ArrayList<Token> symbolsForACTION;
-    // 1 = Shift  - перенос
-    // 2 = Reduce - свёртка
-    // 3 = Accept - принятие
-    // 4 = Error  - ошибка
-    int ACTION1(int i, Token a){
-        int state = -1;
-        if(i != -1)
-            state = getIndexFromGoTo(items.get(i),a);
-        if(state != -1){
-            t = state;
-            return 1;
-        } else {
-
-            ArrayList<Token> partToFind = new ArrayList<>(symbolsForACTION);
-            //System.out.println(symbolsForACTION);
-            for (int j = symbolsForACTION.size() - 1; j >= 0; j--) {
-                for (Production pro : Productions) {
-                    if (pro.definitions.equals(partToFind)) {
-                        System.out.println(partToFind);
-                        reduce = pro;
-                        return 2;
-                    }
-                }
-                partToFind.remove(0);
-            }
+    void makeFirstSet() {
+        FirstSet = new ArrayList<>(NonTerminals.size());
+        first = new HashMap<>(NonTerminals.size());
+        for (Token nonTerminal : NonTerminals) {
+            ArrayList<Token> e = removeDuplicates(LL_First(nonTerminal));
+            e.remove(null);
+            FirstSet.add(e);
+            first.put(nonTerminal, e);
         }
-        if(a.equals(new Token("$", "END_MARKER")))
-            return 3;
-
-        return 4;
     }
 
-    //============================== LR ==============================
+    void makeFollowSet() {
+        FollowSet = new ArrayList<>(NonTerminals.size());
+        follow = new HashMap<>(NonTerminals.size());
+        for (Token nonTerminal : NonTerminals) {
+            ArrayList<Token> e;
+            try {
+                e = Follow(nonTerminal);
+            } catch (StackOverflowError stackOverflowError){
+                // Это ужасная вещь, но она нужна для редкого случая, когда два нетерминала взаимосвязаны через Follow
+                // Follow(S) = ... + Follow(A)
+                // Follow(A) = Follow(S)
+                e = LL_First(nonTerminal);
+                e.add(new Token("$","END_MARKER"));
+                e.remove(new Token("#","EPSILON"));
+            }
+            ArrayList<Token> ee = removeDuplicates(e);
+            ee.remove(null);
+            FollowSet.add(ee);
+            follow.put(nonTerminal, ee);
+        }
+    }
+
+    void printFirstSet(){
+        for (Token nonTerminal : NonTerminals) {
+            String firstString = "FIRST(" + nonTerminal.data + ") = {";
+            for (Token token: first.get(nonTerminal))
+                firstString += token.data + ", ";
+            firstString += "}";
+            firstString = firstString.replace(", }", "}");
+            System.out.println(firstString);
+            if (controller != null)
+                controller.LogConsole.appendText(firstString + "\n");
+        }
+        if (controller != null)
+            controller.LogConsole.appendText("\n");
+    }
+
+    void printFollowSet(){
+        for (Token nonTerminal : NonTerminals) {
+            String followString = "FOLLOW(" + nonTerminal.data + ") = {";
+            for (Token token : follow.get(nonTerminal))
+                followString += token.data + ", ";
+            followString += "}";
+            followString = followString.replace(", }", "}");
+            System.out.println(followString);
+            if (controller != null)
+                controller.LogConsole.appendText(followString + "\n");
+        }
+        if (controller != null)
+            controller.LogConsole.appendText("\n");
+    }
+
+    ArrayList<Token> LL_First(Token X){
+        ArrayList<Token> temp = new ArrayList<Token>();
+        temp.add(X);
+        return LL_First(temp);
+    }
+
+    ArrayList<Token> LL_First(ArrayList<Token> X){
+        ArrayList<Token> result = new ArrayList<>();
+        if(X.get(0).isEpsilon()){
+            result.add(X.get(0));
+            return result;
+        }
+        if(Terminals.contains(X.get(0))){
+            result.add(X.get(0));
+            return result;
+        }
+        for(Production pro : Productions){
+            if(pro.nonTerminal.equals(X.get(0))){
+                boolean allProductionsHasEps = true;
+                for(int i = 0; i < pro.size(); i++){
+                    Token Yi = pro.get(i);
+                    if(Yi.type.equals("TERMINAL")){
+                        result.add(Yi);
+                        allProductionsHasEps = false;
+                        break;
+                    }
+                    ArrayList<Token> FirstYi = LL_First(Yi);
+                    allProductionsHasEps = FirstYi.contains(new Token("#"));
+
+                    if(Yi.type.equals("NONTERMINAL"))
+                        for(Token t : LL_First(Yi))
+                            if(t != null && !t.type.equals("EPSILON"))
+                                result.add(t);
+
+                    if (!Yi.type.equals("NONTERMINAL") || !FirstYi.contains(new Token("#")))
+                        break;
+                }
+                if(allProductionsHasEps )
+                    result.add(new Token("#", "EPSILON"));
+            }
+        }
+        return result;
+    }
+
+    private ArrayList<Token> LL_First(Production pro){
+        Token token = pro.nonTerminal;
+        ArrayList<Token> result = new ArrayList<>();
+
+        if(token.type.equals("TERMINAL"))
+            result.add(token);
+        else if(token.type.equals("EPSILON"))
+            result.add(token);
+        else {
+            boolean allProductionsHasEps = true;
+            for(int i = 0; i < pro.size(); i++){
+                Token Yi = pro.get(i);
+                if(Yi.type.equals("TERMINAL")){
+                    result.add(Yi);
+                    allProductionsHasEps = false;
+                    break;
+                }
+                ArrayList<Token> FirstYi = LL_First(Yi);
+                if(!FirstYi.contains(new Token("#")))
+                    allProductionsHasEps = false;
+
+                if(Yi.type.equals("NONTERMINAL"))
+                    for(Token t : LL_First(Yi))
+                        if(t != null && !t.type.equals("EPSILON"))
+                            result.add(t);
+
+                if (!Yi.type.equals("NONTERMINAL") || !FirstYi.contains(new Token("#")))
+                    break;
+            }
+            if(allProductionsHasEps )
+                result.add(new Token("#", "EPSILON"));
+        }
+        return result;
+    }
+
+    ArrayList<Token> Follow(Token token){
+        ArrayList<Token> result = new ArrayList<>();
+        if (token.equals(startSymbol))
+            result.add(new Token("$", "END_MARKER"));
+
+        for (Production pro : Productions) {
+            if(!pro.definitions.contains(token))
+                continue;
+            int i = pro.getTokenIndex(token) + 1;
+            if(i == pro.size()){
+                if (pro.nonTerminal.equals(startSymbol)){
+                    result.addAll(Follow(pro.nonTerminal));
+                    result.add(new Token("$", "END_MARKER"));
+                } else {
+                    if(pro.nonTerminal.equals(token))
+                        continue;
+                    result.addAll(Follow(pro.nonTerminal));
+                }
+            }
+            else
+                for(; i < pro.size(); i++){
+                    ArrayList<Token> First = LL_First(pro.get(i));
+                    if(First.contains(new Token("#")) ){
+                        if(pro.get(i).equals(token))
+                            continue;
+                        for (Token value : First) {
+                            if (value.type.equals("EPSILON"))
+                                continue;
+                            result.add(value);
+                        }
+                        result.addAll(Follow(pro.nonTerminal));
+                    }
+                    else
+                        result.addAll(First);
+                }
+        }
+        return result;
+    }
+    
+    void LL_Parse(ArrayList<Token> program){
+        int codePointer = 0;
+        Stack<Token> stack = new Stack<>();
+        stack.push(new Token("$"));
+        stack.push(startSymbol);
+
+        while(true){
+            if(stack.peek().equals(new Token("$")) && codePointer == program.size()){
+                controller.LogConsole.appendText("Success\n");
+                return;
+            } else if(stack.peek().equals(new Token("#"))){
+                stack.pop();
+            } else if(codePointer < program.size() && program.get(codePointer).equals(stack.peek())){
+                codePointer++;
+                stack.pop();
+            } else {
+                if(codePointer == program.size()){
+                    if(TokenHasEpsProd(stack.peek()))
+                        stack.pop();
+                    continue;
+                }
+                Production p = SyntaxMatrix.get(stack.peek().data).get(program.get(codePointer).data);
+                if(p == null){
+                    controller.LogConsole.appendText("FAIL\n");
+                    return;
+                }
+                ArrayList<Token> temp = p.definitions;
+                stack.pop();
+                for (int i = temp.size() - 1; i > -1; i--)
+                    stack.push(temp.get(i));
+            }
+        }
+    }
+
+    private boolean TokenHasEpsProd(Token tok){
+        boolean result = false;
+        for(Production pro : Productions){
+            if(pro.nonTerminal.data.equals(tok.data))
+                result |= pro.hasEpsilonProduction();
+        }
+        return result;
+    }
 
     void makeSyntaxMatrix(){
         SyntaxMatrix = new HashMap<>();
 
         SyntaxMatrix.put(" ", new HashMap<>());
-        for (Token t : Terminals) {
+        for (Token t : Terminals)
             SyntaxMatrix.get(" ").put(t.data, null);
-        }
+
         for(Token nt : NonTerminals)
             SyntaxMatrix.put(nt.data, new HashMap<>());
 
         for(Production pro : Productions){
-            for(Token tok : FirstNew(pro)){
-                if(tok != null)
-                    if(!tok.type.equals("EPSILON"))
-                        SyntaxMatrix.get(pro.nonTerminal.data).put(tok.data, pro);
-                    else{
-                        for(Token t : follow.get(pro.nonTerminal)){ // ============================
-                            if(t != null){
-                                SyntaxMatrix.get(pro.nonTerminal.data).put(t.data, new Production(pro.nonTerminal, true));
-                            }
+            for(Token tok : LL_First(pro)){
+                if(!tok.type.equals("EPSILON"))
+                    SyntaxMatrix.get(pro.nonTerminal.data).put(tok.data, pro);
+                else{
+                    for(Token t : follow.get(pro.nonTerminal)){
+                        if(t != null){
+                            SyntaxMatrix.get(pro.nonTerminal.data)
+                                    .put(t.data, new Production(pro.nonTerminal, true));
                         }
                     }
+                }
             }
         }
-
-        System.out.println("Matrix: ");
-        for(Token nt : NonTerminals){
-            for(Token t : Terminals)
-                System.out.print(SyntaxMatrix.get(nt.data).get(t.data) + " ");
-            System.out.println();
-        }
-
-
     }
+
+    ///============================= LL ==============================
+
+
+
 
     boolean isLeftRecursive(){
         for(Production pro : Productions)
@@ -499,107 +682,9 @@ class Grammar {
                 }
             }
         }
-
         return program;
     }
 
-    void Parse(String str){
-        //ArrayList<String> program = new ArrayList<>();
-
-        // Пока что эта строка - "Лексер". Для разбора требуется один пробел между каждым токеном
-        //String[] tempArr = str.split(" ");
-
-        //
-        ArrayList<String> program = new ArrayList<>();
-        String token = "";
-        for (int i = 0; i < str.length(); i++) {
-            if(str.charAt(i) == ' ')
-                continue;
-
-            token += str.charAt(i);
-            for(Token t : Terminals){
-                if(t.data.equals(token)){
-                    program.add(token);
-                    token = "";
-                }
-            }
-        }
-
-        System.out.println("Получено _" + str + "_");
-        System.out.println("Разобрано _" + program + "_");
-
-        if(!true)
-            return;
-
-        /*
-        for(String s : tempArr)
-            if(!s.equals(" "))
-                program.add(s.replaceAll("\n", ""));
-
-         */
-
-
-        int codePointer = 0;
-        Stack<String> stack = new Stack<>();
-        stack.push("$");
-        stack.push(NonTerminals.get(0).data);
-
-        while(true){
-            //System.out.println();
-            //if(codePointer < program.length)
-            //    System.out.println(stack.peek() + ":::" + program[codePointer]);
-            //if(TokenHasEpsProd(stack.peek())){
-            //    stack.pop();
-            //} else
-            if(stack.peek().equals("$") && codePointer == program.size()){
-                System.out.println("Успех");
-                controller.LogConsole.appendText("Success\n");
-                return;
-            } else if(stack.peek().equals("#")){
-                stack.pop();
-            }
-            else if(codePointer < program.size() && program.get(codePointer).equals(stack.peek())){
-                System.out.println("Case 2");
-                codePointer++;
-                stack.pop();
-            } else {
-                if(codePointer == program.size()){
-                    if(TokenHasEpsProd(stack.peek()))
-                            stack.pop();
-                    continue;
-                }
-
-                System.out.println(stack.peek() + "===" + program.get(codePointer));
-                System.out.println(stack);
-                Production p = SyntaxMatrix.get(stack.peek()).get(program.get(codePointer));
-
-                System.out.println(stack.peek() + " " + program.get(codePointer) + " === " + p);
-
-                if(p == null){
-                    System.out.println("FAIL");
-                    controller.LogConsole.appendText("FAIL\n");
-                    return;
-                }
-                String[] temp = p.getProd().split(" ");
-                stack.pop();
-                for (int i = temp.length - 1; i > -1; i--) {
-                    stack.push(temp[i]);
-                }
-                System.out.println(stack);
-            }
-        }
-
-
-    }
-
-    private boolean TokenHasEpsProd(String tok){
-        boolean result = false;
-        for(Production pro : Productions){
-            if(pro.nonTerminal.data.equals(tok))
-                result |= pro.hasEpsilonProduction();
-        }
-        return result;
-    }
 
     Grammar(Controller controller, String fileName) throws IOException{
         this(fileName);
@@ -632,7 +717,7 @@ class Grammar {
         }
         in.close();
 
-        countOfProduction = rawTokens.size();
+        int countOfProduction = rawTokens.size();
         Productions = new ArrayList<>(countOfProduction);
         String temp;
         for (int i = 0; i < countOfProduction; i++) {
@@ -666,7 +751,7 @@ class Grammar {
             definitionIndex++;
         }
         Terminals.add(new Token("$", "END_MARKER"));
-        countOfProduction = definitionIndex;
+        startSymbol = NonTerminals.get(0);
     }
 
     Grammar(String grammar, int i){
@@ -674,243 +759,6 @@ class Grammar {
     }
 
 
-    Token[] First(Token token){
-        int setIndex = 0;
-        Token[] set = new Token[30];
-        //System.out.println();
-
-        if(token.type.equals("TERMINAL"))
-            set[setIndex] = token;
-        else if(token.type.equals("EPSILON"))
-            set[setIndex] = token;
-        else {
-            for(Production pro : Productions){
-                if(pro.nonTerminal.equals(token)){
-                    boolean allProductionsHasEps = true;
-                    for(int i = 0; i < pro.size(); i++){
-                        Token Yi = pro.get(i);
-                        if(Yi.type.equals("TERMINAL")){
-                            set[setIndex] = Yi;
-                            setIndex++;
-                            allProductionsHasEps = false; //
-                            break;
-                        }
-                        Token[] FirstYi = First(Yi);
-
-                        if(inTokenArray(FirstYi, new Token("#", "EPSILON")) == -1){
-                            allProductionsHasEps = false;
-                        }
-
-                        if(Yi.type.equals("NONTERMINAL")){
-                            for(Token t : First(Yi)){
-                                if(t != null && !t.type.equals("EPSILON")){
-                                    set[setIndex] = t;
-                                    setIndex++;
-                                }
-                            }
-                        }
-                        if (!Yi.type.equals("NONTERMINAL") || inTokenArray(FirstYi, new Token("#", "EPSILON")) == -1)
-                            break;
-
-                    }
-                    if(allProductionsHasEps ){
-                        set[setIndex] = new Token("#", "EPSILON");
-                        setIndex++;
-                    }
-                }
-            }
-        }
-        return set;
-    }
-
-    Token[] Follow(Token token){
-        //System.out.println();
-        //System.out.println("Обработка : " + token.data);
-        String debug = "";
-        Token[] set = new Token[100];
-        int setIndex = 0;
-        if (token.equals(NonTerminals.get(0))){
-            set[setIndex] = new Token("$", "END_MARKER");
-            setIndex++;
-        }
-        for (Production pro : Productions) {
-            if(!pro.definitions.contains(token))
-                continue;
-            if(token.data.equals(debug)){
-                System.out.println(pro + " has token " + token.data);
-            }
-            int i = pro.getTokenIndex(token) + 1;
-            if(token.data.equals(debug))
-                System.out.println(pro + " " + i + " pro.size=" + pro.size());
-
-            // Rule-2
-            if(i == pro.size()){
-                if(token.data.equals(debug)){
-                    System.out.println("Rule-2");
-                }
-                if (pro.nonTerminal.equals(NonTerminals.get(0))){
-                    Token[] follow = Follow(pro.nonTerminal);
-                    for (Token t : follow) {
-                        if (t != null) {
-                            set[setIndex] = t;
-                            setIndex++;
-                        }
-                    }
-                    set[setIndex] = new Token("$", "END_MARKER");
-                    setIndex++;
-                    //return set;
-                } else {
-                    if(pro.nonTerminal.equals(token))
-                        continue;
-
-                    Token[] Follow = Follow(pro.nonTerminal);
-                    for (Token t : Follow) {
-                        if (t != null) {
-                            set[setIndex] = t;
-                            setIndex++;
-                        }
-                    }
-                    if(token.data.equals(debug))
-                        System.out.println("Follow(" + pro.nonTerminal.data + ")=" + Arrays.toString(Follow));
-                }
-                //return set;
-                //continue;
-            }
-            else
-                for(; i < pro.size(); i++){
-                    // Rule 3
-                    Token[] First = First(pro.get(i));
-/*
-                System.out.println(pro.get(i));
-                System.out.println(first.get(pro.get(i)));
-                System.out.println(first.get(new Token("B", "NONTERMINAL")));
-                System.out.println(first.size());
-                Token[] First = (Token[]) first.get(pro.get(i)).toArray();
- */
-                    // Rule 3-2
-                    if(inTokenArray(First, new Token("#", "EPSILON")) !=-1 ){
-                        if(token.data.equals(debug)){
-                            System.out.println("Rule-3-2");
-                        }
-
-                        // Это на example5 не влияет
-                        if(pro.get(i).equals(token))
-                            continue;
-
-
-                        for (Token value : First) {
-                            //System.out.println(j + "=" + First[j]);
-                            if (value == null || value.type.equals("EPSILON"))
-                                continue;
-                            set[setIndex] = value;
-                            setIndex++;
-                        }
-                        Token[] Follow = Follow(pro.nonTerminal);
-                        for (Token t: Follow) {
-                            if(t != null){
-                                set[setIndex] = t;
-                                setIndex++;
-                            }
-                        }
-                        if(token.data.equals(debug)){
-                            System.out.println("Follow(" + pro.nonTerminal.data + ") = " + Arrays.toString(Follow));
-                            System.out.println("First(" + pro.get(i).data + ") = " + Arrays.toString(First));
-                            System.out.println("Set = " + Arrays.toString(set));
-                        }
-                    }
-                    // Rule-3-1
-                    else {
-                        if(token.data.equals(debug))
-                            System.out.println("Rule-3-1");
-                        for (Token t: First) {
-                            if(t != null){
-                                set[setIndex] = t;
-                                setIndex++;
-                            }
-                        }
-                    }
-                }
-        }
-        return set;
-    }
-
-    void makeFirstSet() {
-        FirstSet = new ArrayList<>(NonTerminals.size());
-        first = new HashMap<>(NonTerminals.size());
-        for (Token nonTerminal : NonTerminals) {
-            ArrayList<Token> e = new ArrayList<>(Arrays.asList(First(nonTerminal)));
-            ArrayList<Token> ee = removeDuplicates(e);
-            ee.remove(null);
-            FirstSet.add(ee);
-            first.put(nonTerminal, ee);
-        }
-    }
-
-    void makeFollowSet() {
-        FollowSet = new ArrayList<>(NonTerminals.size());
-        follow = new HashMap<>(NonTerminals.size());
-        for (Token nonTerminal : NonTerminals) {
-            ArrayList<Token> e;
-            try {
-                e = new ArrayList<>(Arrays.asList(Follow(nonTerminal)));
-            } catch (StackOverflowError stackOverflowError){
-                e = new ArrayList<>(Arrays.asList(First(nonTerminal)));
-                e.add(new Token("$","END_MARKER"));
-                e.remove(new Token("#","EPSILON"));
-            }
-            ArrayList<Token> ee = removeDuplicates(e);
-            ee.remove(null);
-            //System.out.println(ee);
-            FollowSet.add(ee);
-            follow.put(nonTerminal, ee);
-        }
-    }
-
-    void printFirstSet(){
-        for (Token nonTerminal : NonTerminals) {
-            String firstString = "FIRST(" + nonTerminal.data + ") = {";
-            for (Token token: first.get(nonTerminal))
-                if (token != null)
-                    firstString += token.data + ", ";
-            firstString += "}";
-            firstString = firstString.replace(", }", "}");
-            System.out.println(firstString);
-            if (controller != null)
-                controller.LogConsole.appendText(firstString + "\n");
-        }
-        if (controller != null)
-            controller.LogConsole.appendText("\n");
-    }
-
-    void printFollowSet(){
-        for (Token nonTerminal : NonTerminals) {
-            String followString = "FOLLOW(" + nonTerminal.data + ") = {";
-            for (Token token : follow.get(nonTerminal))
-                if (token != null)
-                    followString += token.data + ", ";
-            followString += "}";
-            followString = followString.replace(", }", "}");
-            System.out.println(followString);
-            if (controller != null)
-                controller.LogConsole.appendText(followString + "\n");
-        }
-        if (controller != null)
-            controller.LogConsole.appendText("\n");
-    }
-
-    // Токен содерится в массиве
-    private int inTokenArray(Token[] tokenArray, Token wantedToken) {
-        int index = 0;
-        for (Token arrayToken : tokenArray) {
-            if (arrayToken != null) {
-                if (wantedToken.data.equals(arrayToken.data)) {
-                    return index;
-                }
-            }
-            index ++;
-        }
-        return -1;
-    }
 
     private static <T> ArrayList<T> removeDuplicates(ArrayList<T> list) {
         ArrayList<T> newList = new ArrayList<T>();
@@ -935,57 +783,5 @@ class Grammar {
         return "TERMINAL";
     }
 
-    private Token[] FirstNew(Production pro){
-        Token token = pro.nonTerminal;
-        int setIndex = 0;
-        Token[] set = new Token[30];
-        //System.out.println();
-
-        if(token.type.equals("TERMINAL"))
-            set[setIndex] = token;
-        else if(token.type.equals("EPSILON"))
-            set[setIndex] = token;
-        else {
-            boolean allProductionsHasEps = true;
-            for(int i = 0; i < pro.size(); i++){
-                Token Yi = pro.get(i);
-                //System.out.println(pro);
-                if(Yi.type.equals("TERMINAL")){
-                    set[setIndex] = Yi;
-                    setIndex++;
-                    allProductionsHasEps = false; //
-                    break;
-                }
-                Token[] FirstYi = First(Yi);
-                if(inTokenArray(FirstYi, new Token("#", "EPSILON")) == -1){
-                    allProductionsHasEps = false;
-                }
-                if(Yi.type.equals("NONTERMINAL")){
-                    for(Token t : First(Yi)){
-                        if(t != null && !t.type.equals("EPSILON")){
-                            set[setIndex] = t;
-                            setIndex++;
-                        }
-                    }
-                }
-                if (!Yi.type.equals("NONTERMINAL") || inTokenArray(FirstYi, new Token("#", "EPSILON")) == -1)
-                    break;
-            }
-            if(allProductionsHasEps ){
-                set[setIndex] = new Token("#", "EPSILON");
-                setIndex++;
-            }
-        }
-        /*
-        for(Production pro : Productions){
-            if(pro.nonTerminal.equals(token)){
-                if(pro.hasToken(new Token("#", "EPSILON")))
-                    set[setIndex] = new Token("#", "EPSILON");
-            }
-        }
-         */
-        //System.out.println("final set for " + token.data + " is " + Arrays.toString(set));
-        return set;
-    }
 
 }

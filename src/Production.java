@@ -35,8 +35,12 @@ class Production {
         return definitions.get(index);
     }
 
-    boolean hasToken(Token wanted){
-        return definitions.contains(wanted);
+    ArrayList<Token> subList(int from, int to){
+        ArrayList<Token> result = new ArrayList<>();
+        for (int i = from; i < to; i++) {
+            result.add(definitions.get(i));
+        }
+        return result;
     }
 
     int getTokenIndex(Token token){
@@ -51,14 +55,6 @@ class Production {
         if(definitions.size() != 1)
             return false;
         return definitions.get(0).data.equals("#");
-    }
-
-    String getProd(){
-        String result = "";
-        for (Token t : definitions) {
-            result += t.data + " ";
-        }
-        return result;
     }
 
     int getIndexOfDot(){

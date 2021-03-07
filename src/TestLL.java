@@ -3,7 +3,7 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class TestGrammar {
+public class TestLL {
     private Grammar grammar;
     private ArrayList<Token> arr;
 
@@ -150,7 +150,6 @@ public class TestGrammar {
         assert(arr.size() == 2);
     }
 
-
     @Test
     public void TestGrammar3Follow() throws IOException {
         grammar = new Grammar("example3.txt");
@@ -228,9 +227,6 @@ public class TestGrammar {
         assert(arr.size() == 2);
     }
 
-
-
-
     @Test
     public void TestGrammar5First() throws IOException {
         grammar = new Grammar("example5.txt");
@@ -285,16 +281,6 @@ public class TestGrammar {
         assert(arr.contains(new Token("g", "TERMINAL")));
         assert(arr.contains(new Token("h", "TERMINAL")));
         assert(arr.contains(new Token("b", "TERMINAL")));
-    }
-
-
-    public boolean TestAllFirst() throws IOException {
-        TestGrammar1First();
-        TestGrammar2First();
-        TestGrammar3First();
-        TestGrammar4First();
-        TestGrammar5First();
-        return true;
     }
 
 }

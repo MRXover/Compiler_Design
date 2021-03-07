@@ -78,7 +78,7 @@ public class TestLR {
 
         ArrayList<Token> input = grammar.Lexer("ID * ID");
 
-        grammar.LRParser(input);
+        grammar.SLRParser(input);
 
     }
 
