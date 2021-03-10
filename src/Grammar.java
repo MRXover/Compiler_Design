@@ -4,8 +4,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import org.w3c.dom.ls.LSOutput;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 import static java.lang.Math.abs;
@@ -78,23 +80,23 @@ class Grammar {
     ArrayList<Production> GoTo(ArrayList<Production> I, Token X){
         ArrayList<Production> J = new ArrayList<>();
         for(Production pro : I){
-            if(pro.definition.contains(X)){
+            if(pro.definitions.contains(X)){
                 Production temp = new Production(pro.nonTerminal);
-                temp.definition.addAll(pro.definition);
-                int indexOfDot = temp.definition.indexOf(new Token("Х", "DOT"));
+                temp.definitions.addAll(pro.definitions);
+                int indexOfDot = temp.definitions.indexOf(new Token("Х", "DOT"));
 
-                if(indexOfDot + 1 == temp.definition.size())
+                if(indexOfDot + 1 == temp.definitions.size())
                     continue;
 
-                if( abs(indexOfDot - temp.definition.indexOf(X) ) > 1)
+                if( abs(indexOfDot - temp.definitions.indexOf(X) ) > 1)
                     continue;
 
                 // если точка правее токена
-                if(indexOfDot > temp.definition.indexOf(X))
+                if(indexOfDot > temp.definitions.indexOf(X))
                     continue;
 
-                temp.definition.set(indexOfDot, temp.definition.get(indexOfDot + 1));
-                temp.definition.set(indexOfDot + 1, new Token("Х", "DOT"));
+                temp.definitions.set(indexOfDot, temp.definitions.get(indexOfDot + 1));
+                temp.definitions.set(indexOfDot + 1, new Token("Х", "DOT"));
 
                 J.addAll(closure(temp));
             }
@@ -112,12 +114,12 @@ class Grammar {
         ArrayDeque<Token> q = new ArrayDeque<>();
         //System.out.println(I);
         //System.out.println(I.definitions.indexOf(new Token("Х", "DOT")));
-        if(I.definition.indexOf(new Token("Х", "DOT")) + 1 == I.definition.size()){
+        if(I.definitions.indexOf(new Token("Х", "DOT")) + 1 == I.definitions.size()){
             set.add(I);
             return set;
         }
 
-        q.addFirst(I.get(I.definition.indexOf(new Token("Х", "DOT")) + 1));
+        q.addFirst(I.get(I.definitions.indexOf(new Token("Х", "DOT")) + 1));
 
         do {
             for(Production pro : Productions){
@@ -125,7 +127,7 @@ class Grammar {
                     Production t = createItem(0, pro);
                     if(!set.contains(t)) {
                         set.add(t);
-                        Token tok = t.definition.get(t.definition.indexOf(new Token("Х", "DOT")) + 1);
+                        Token tok = t.definitions.get(t.definitions.indexOf(new Token("Х", "DOT")) + 1);
 
                         if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
                             q.addLast(tok);
@@ -146,8 +148,8 @@ class Grammar {
 
     Production createItem(int index, Production p){
         Production pro = new Production(p.nonTerminal);
-        pro.definition.addAll(p.definition);
-        pro.definition.add(index, new Token("Х", "DOT"));
+        pro.definitions.addAll(p.definitions);
+        pro.definitions.add(index, new Token("Х", "DOT"));
         return pro;
     }
 
@@ -181,6 +183,9 @@ class Grammar {
 
         Token a = input.get(0);
         int pointer = 0;
+
+        buildAllItems();
+
         int stringIndex = 1;
 
         while (true) {
@@ -211,13 +216,13 @@ class Grammar {
             } else if (action.charAt(0) == 'r'){
                 int prodNumber = Integer.parseInt(action.substring(1, action.length()));
                 String shift = "—вертка по " + Productions.get(prodNumber).nonTerminal.data + " -> ";
-                for (Token t : Productions.get(prodNumber).definition){
+                for (Token t : Productions.get(prodNumber).definitions){
                     shift += t.data;
                     stack.pop();
                 }
                 System.out.println(shift);
                 root.add(new Label(shift), 4, stringIndex);
-                int count = Productions.get(prodNumber).definition.size();
+                int count = Productions.get(prodNumber).definitions.size();
                 for (int j = 0; j < count; j++){
                     symbols.remove(symbols.size() - 1);
                 }
@@ -229,7 +234,6 @@ class Grammar {
                 break;
             } else if(action.charAt(0) == 'e'){
                 System.out.println("ERROR");
-                root.add(new Label("ERROR"), 4, stringIndex);
                 break;
             }
             stringIndex++;
@@ -258,9 +262,9 @@ class Grammar {
 
         for(Production pro : items.get(0)){
             int ind = pro.getIndexOfDot();
-            if(ind + 1 == pro.definition.size())
+            if(ind + 1 == pro.definitions.size())
                 continue;
-            Token t = pro.definition.get(ind + 1);
+            Token t = pro.definitions.get(ind + 1);
             if(!tokensToCheck.contains(t))
                 tokensToCheck.add(t);
         }
@@ -280,9 +284,9 @@ class Grammar {
             for (int i = left; i < oldIndex + 1; i++) {
                 for (Production pro : items.get(i)) {
                     int ind = pro.getIndexOfDot();
-                    if (ind + 1 == pro.definition.size())
+                    if (ind + 1 == pro.definitions.size())
                         continue;
-                    Token t = pro.definition.get(ind + 1);
+                    Token t = pro.definitions.get(ind + 1);
                     if (!tokensToCheck.contains(t))
                         tokensToCheck.add(t);
                 }
@@ -345,10 +349,10 @@ class Grammar {
         for (Token tok : f) {
             if (tok.data.equals(a.data)) {
                 for(Production pro : items.get(i)) {
-                    if (pro.getIndexOfDot() + 1 == pro.definition.size()) {
+                    if (pro.getIndexOfDot() + 1 == pro.definitions.size()) {
                         if (pro.nonTerminal.equals(t)) {
                             Production wanted = new Production(pro);
-                            wanted.definition.remove(wanted.getIndexOfDot());
+                            wanted.definitions.remove(wanted.getIndexOfDot());
                             System.out.println("ACTION( " + i + ", " + a.data + ") = r" + Productions.indexOf(wanted));
                             return "r" + Productions.indexOf(wanted);
                         }
@@ -358,7 +362,7 @@ class Grammar {
 
         }
 
-        return "err";
+        return "Err";
     }
 
     void buildFollowLR(){
@@ -383,12 +387,12 @@ class Grammar {
         }
 
         for (Production pro : Productions){
-            if(pro.definition.contains(t)){
+            if(pro.definitions.contains(t)){
                 if(FollowLR.get(pro.nonTerminal) != null)
                     result.addAll(FollowLR.get(pro.nonTerminal));
-                int position = pro.definition.lastIndexOf(t);
-                if(position + 1 != pro.definition.size()){
-                    result.addAll(FollowLR(pro.definition.get(position + 1), t));
+                int position = pro.definitions.lastIndexOf(t);
+                if(position + 1 != pro.definitions.size()){
+                    result.addAll(FollowLR(pro.definitions.get(position + 1), t));
                 }
             }
         }
@@ -548,7 +552,7 @@ class Grammar {
             result.add(new Token("$", "END_MARKER"));
 
         for (Production pro : Productions) {
-            if(!pro.definition.contains(token))
+            if(!pro.definitions.contains(token))
                 continue;
             int i = pro.getTokenIndex(token) + 1;
             if(i == pro.size()){
@@ -607,7 +611,7 @@ class Grammar {
                     controller.LogConsole.appendText("FAIL\n");
                     return;
                 }
-                ArrayList<Token> temp = p.definition;
+                ArrayList<Token> temp = p.definitions;
                 stack.pop();
                 for (int i = temp.size() - 1; i > -1; i--)
                     stack.push(temp.get(i));
