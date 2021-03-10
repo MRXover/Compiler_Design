@@ -3,63 +3,56 @@ import java.util.Objects;
 
 class Production {
     Token nonTerminal;
-    ArrayList<Token> definitions;
+    ArrayList<Token> definition;
 
 
     Production(Token left){
         nonTerminal = left;
-        definitions = new ArrayList<>();
+        definition = new ArrayList<>();
     }
 
     Production(Token left, boolean addEps){
         nonTerminal = left;
-        definitions = new ArrayList<>();
-        definitions.add(new Token("#", "EPSILON"));
+        definition = new ArrayList<>();
+        definition.add(new Token("#", "EPSILON"));
     }
 
     Production(Production pro){
         nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
-        definitions = new ArrayList<>(pro.definitions);
+        definition = new ArrayList<>(pro.definition);
     }
 
     Production add(Token token){
-        definitions.add(token);
+        definition.add(token);
         return this;
     }
 
     int size(){
-        return definitions.size();
+        return definition.size();
     }
 
     Token get(int index){
-        return definitions.get(index);
+        return definition.get(index);
     }
 
-    ArrayList<Token> subList(int from, int to){
-        ArrayList<Token> result = new ArrayList<>();
-        for (int i = from; i < to; i++) {
-            result.add(definitions.get(i));
-        }
-        return result;
-    }
 
     int getTokenIndex(Token token){
-        for (int i = 0; i < definitions.size(); i++) {
-            if(definitions.get(i).data.equals(token.data))
+        for (int i = 0; i < definition.size(); i++) {
+            if(definition.get(i).data.equals(token.data))
                 return i;
         }
         return -1;
     }
 
     boolean hasEpsilonProduction(){
-        if(definitions.size() != 1)
+        if(definition.size() != 1)
             return false;
-        return definitions.get(0).data.equals("#");
+        return definition.get(0).data.equals("#");
     }
 
     int getIndexOfDot(){
-        for (int i = 0; i < definitions.size(); i++) {
-            if(definitions.get(i).type.equals("DOT"))
+        for (int i = 0; i < definition.size(); i++) {
+            if(definition.get(i).type.equals("DOT"))
                 return i;
         }
         return -1;
@@ -69,7 +62,7 @@ class Production {
     @Override
     public String toString(){
         String result = nonTerminal.data + " : ";
-        for (Token t : definitions) {
+        for (Token t : definition) {
             result += t.data + " ";
         }
         return result;
@@ -85,11 +78,11 @@ class Production {
         if (!nonTerminal.data.equals(that.nonTerminal.data))
             return false;
 
-        if(definitions.size() != that.definitions.size())
+        if(definition.size() != that.definition.size())
             return false;
 
-        for (int i = 0; i < definitions.size(); i++) {
-            if(!definitions.get(i).data.equals(that.definitions.get(i).data))
+        for (int i = 0; i < definition.size(); i++) {
+            if(!definition.get(i).data.equals(that.definition.get(i).data))
                 return false;
         }
 
@@ -98,7 +91,7 @@ class Production {
 
     @Override
     public int hashCode() {
-        return Objects.hash(nonTerminal, definitions);
+        return Objects.hash(nonTerminal, definition);
     }
 
 

@@ -39,10 +39,6 @@ public class Controller {
     @FXML
     public Button SaveFile;
 
-    @FXML
-    public Button MakeActionTable;
-    @FXML
-    public Button ParseLR;
 
     @FXML
     private MenuBar menuBar;
@@ -56,7 +52,10 @@ public class Controller {
     private MenuItem LLParse;
     @FXML
     private MenuItem TEST;
-
+    @FXML
+    private MenuItem MakeActionTable;
+    @FXML
+    private MenuItem SLR_Parse;
 
     @FXML
     void initialize() {
@@ -76,86 +75,6 @@ public class Controller {
             LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
         });
 
-
-
-
-        MakeActionTable.setOnAction(event -> {
-            if(Grammar == null) {
-                LogConsole.appendText("Grammar is not loaded\n");
-                return;
-            }
-
-            Grammar.augmentGivenGrammar();
-            Grammar.buildAllItems();
-
-            Stage newWindow = new Stage();
-            GridPane root = new GridPane();
-
-            newWindow.setX(200);
-            newWindow.setY(100);
-
-            root.setPadding(new Insets(20));
-            root.setHgap(25);
-            root.setVgap(15);
-
-
-            int leftNonTerminalsPosition  = Grammar.Terminals.size();
-            int rightNonTerminalsPosition =  Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
-
-            for (int i = 0; i < Grammar.Terminals.size(); i++) {
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
-            }
-            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
-            }
-
-
-            for (int i = 0; i < Grammar.items.size(); i++) {
-                //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
-                root.add(new Label(String.valueOf(i)), 0, i+1);
-            }
-
-            // GOTO
-            for (int i = 0; i < Grammar.items.size(); i++) {
-                for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
-                    int result = Grammar.getIndexFromGoTo(Grammar.items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
-                    if( result == -1)
-                        root.add(new Label(" "), j, i+1);
-                    else
-                        root.add(new Label(String.valueOf(result)), j, i+1);
-                }
-            }
-
-            // ACTION
-            Grammar.buildFollowLR();
-            for (int i = 0; i < Grammar.items.size(); i++) {
-                for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
-                    Token a;
-                    if(j != Grammar.Terminals.size())
-                        a = Grammar.Terminals.get(j - 1);
-                    else
-                        a = new Token("$", "END_MARKER");
-
-                    String result = Grammar.ACTION(i, a);
-                    if(result.equals("Err"))
-                        root.add(new Label(" "), j + 1, i+1);
-                    else
-                        root.add(new Label(result), j, i+1);
-                }
-            }
-
-            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
-            newWindow.setTitle("ACTION and GOTO table");
-            newWindow.setScene(scene);
-
-            newWindow.show();
-        });
-
-        ParseLR.setOnAction(event -> {
-            Grammar.augmentGivenGrammar();
-            Grammar.buildFollowLR();
-            Grammar.SLRParser(Grammar.Lexer("ID * ID* ID* ID* ID+ID* ID* ID"));
-        });
 
         LoadFile.setOnAction(actionEvent -> {
             Node source = (Node) actionEvent.getSource();
@@ -227,9 +146,9 @@ public class Controller {
                         Production newProd2 = new Production(newToken);
                         Production newProd3 = new Production(newToken);
 
-                        for(int i = 1; i < pro.definitions.size(); i++){
-                            newProd1.add(pro.definitions.get(i));
-                            newProd2.add(pro.definitions.get(i));
+                        for(int i = 1; i < pro.definition.size(); i++){
+                            newProd1.add(pro.definition.get(i));
+                            newProd2.add(pro.definition.get(i));
                         }
 
                         newProd2.add(newToken);
@@ -365,8 +284,94 @@ public class Controller {
             }
             Grammar.LL_Parse(Grammar.Lexer(CodeArea.getText()));
         });
-        //============================== LL ==============================//
+        ///============================= LL ==============================//
 
+        //============================== SLR =============================//
+
+        MakeActionTable.setOnAction(event -> {
+            if(Grammar == null) {
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+
+            if(!Grammar.isAugmented)
+                Grammar.augmentGivenGrammar();
+
+            Grammar.buildAllItems();
+
+            Stage newWindow = new Stage();
+            GridPane root = new GridPane();
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            root.setPadding(new Insets(20));
+            root.setHgap(25);
+            root.setVgap(15);
+
+            int leftNonTerminalsPosition  = Grammar.Terminals.size();
+            int rightNonTerminalsPosition = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
+
+            for (int i = 0; i < Grammar.Terminals.size(); i++) {
+                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
+            }
+            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
+                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
+            }
+
+
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
+                root.add(new Label(String.valueOf(i)), 0, i+1);
+            }
+
+            // GOTO
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
+                    int result = Grammar.getIndexFromGoTo(Grammar.items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+                    if( result == -1)
+                        root.add(new Label(" "), j, i+1);
+                    else
+                        root.add(new Label(String.valueOf(result)), j, i+1);
+                }
+            }
+
+            // ACTION
+            Grammar.buildFollowLR();
+            for (int i = 0; i < Grammar.items.size(); i++) {
+                for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
+                    Token a;
+                    if(j != Grammar.Terminals.size())
+                        a = Grammar.Terminals.get(j - 1);
+                    else
+                        a = new Token("$", "END_MARKER");
+
+                    String result = Grammar.ACTION(i, a);
+                    if(result.equals("Err"))
+                        root.add(new Label(" "), j + 1, i+1);
+                    else
+                        root.add(new Label(result), j, i+1);
+                }
+            }
+
+            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("ACTION and GOTO table");
+            newWindow.setScene(scene);
+
+            newWindow.show();
+        });
+
+        SLR_Parse.setOnAction(event -> {
+            if(!Grammar.isAugmented)
+                Grammar.augmentGivenGrammar();
+            if(Grammar.FollowLR == null)
+                Grammar.buildFollowLR();
+            if(Grammar.items == null)
+                Grammar.buildAllItems();
+            Grammar.SLRParser(Grammar.Lexer(CodeArea.getText()));
+        });
+
+        ///============================= SLR =============================//
 
         TEST.setOnAction(event -> {
             Grammar.makeFollowSet();
