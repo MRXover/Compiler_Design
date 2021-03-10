@@ -373,14 +373,23 @@ public class Controller {
 
         ///============================= SLR =============================//
 
+        //============================== LR ==============================//
+
+        ///============================= LR ==============================//
+
         TEST.setOnAction(event -> {
-            Grammar.makeFollowSet();
-            Grammar.buildFollowLR();
-            for(Token t : Grammar.NonTerminals){
-                System.out.println(Grammar.follow.get(t));
-                System.out.println(Grammar.FollowLR.get(t));
-                System.out.println();
+            try {
+                Grammar = new Grammar(this, "example11.txt");
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+            Grammar.augmentGivenGrammar();
+            Grammar.printGrammar();
+            ItemLR i = new ItemLR(0, Grammar.Productions.get(0));
+            i.setTerminal(new Token("$"));
+            System.out.println(i);
+
+            System.out.println(Grammar.LR_CLOSURE(i));
         });
     }
 }

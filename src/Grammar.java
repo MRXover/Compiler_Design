@@ -33,30 +33,65 @@ class Grammar {
     boolean isAugmented;
 
     public static void main(String[] args) throws IOException {
-
-/*
-        √отовый тестовый пример дл€ GOTO и дл€ CLOSURE тоже
-
-        Grammar g = new Grammar("example10.txt");
-        g.printGrammar();
+        Grammar g = new Grammar("example11.txt");
         g.augmentGivenGrammar();
         g.printGrammar();
+        ItemLR i = new ItemLR(0, g.Productions.get(0));
+        i.setTerminal(new Token("$"));
+        System.out.println(i);
 
-        ArrayList<Production> C = new ArrayList<Production>();
-        Production p1 = g.createItem(1, g.Productions.get(0));
-        Production p2 = g.createItem(1, g.Productions.get(1));
-        C.add(p1);
-        C.add(p2);
-
-        System.out.println(p1);
-        System.out.println(p2);
-
-        g.GoTo(C, new Token("+", "TERMINAL"));
- */
-
-
-
+        System.out.println(g.LR_CLOSURE(i));
     }
+
+    //============================== LR ==============================
+
+
+    ArrayList<ItemLR> LR_CLOSURE(ItemLR I){
+        HashMap<String, Boolean> added = new HashMap<>();
+        for (Token tok : NonTerminals)
+            added.put(tok.data, false);
+
+        ArrayList<ItemLR> set = new ArrayList<>();
+        set.add(I);
+        ArrayDeque<Token> q = new ArrayDeque<>();
+        System.out.println(I);
+        System.out.println(I.definition.indexOf(new Token("Х", "DOT")));
+        if(I.definition.indexOf(new Token("Х", "DOT")) + 1 == I.definition.size()){
+            set.add(I);
+            return set;
+        }
+
+        q.addFirst(I.get(I.definition.indexOf(new Token("Х", "DOT")) + 1));
+
+        do {
+            for(Production pro : Productions){
+                if(pro.nonTerminal.data.equals(q.peekFirst().data)){
+                    ItemLR t = new ItemLR(0, pro);
+                    if(!set.contains(t)) {
+                        set.add(t);
+                        Token tok = t.definition.get(t.definition.indexOf(new Token("Х", "DOT")) + 1);
+
+                        if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
+                            q.addLast(tok);
+                        }
+                    }
+                }
+            }
+            added.replace(q.peekFirst().data, true);
+            q.pollFirst();
+
+            // чистка
+            q.removeIf(t -> added.get(t.data));
+
+        } while (!q.isEmpty());
+
+        return set;
+    }
+
+    ///============================= LR ==============================
+
+
+
 
     //============================== SLR ==============================
 
