@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="1000.0" style="-fx-background-color: #102033;" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controller">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="1000.0" style="-fx-background-color: #102033;" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controller">
    <children>
       <AnchorPane layoutY="71.0" prefHeight="529.0" prefWidth="1000.0">
          <children>
@@ -26,16 +26,6 @@
             <Button fx:id="LoadGrammar" layoutX="14.0" layoutY="157.0" mnemonicParsing="false" prefHeight="30.0" prefWidth="110.0" text="Load">
                <font>
                   <Font name="Segoe UI" size="12.0" />
-               </font>
-            </Button>
-            <Button fx:id="MakeActionTable" layoutX="377.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="ACTION table">
-               <font>
-                  <Font name="Segoe UI" size="14.0" />
-               </font>
-            </Button>
-            <Button fx:id="ParseLR" layoutX="218.0" layoutY="15.0" mnemonicParsing="false" prefHeight="37.0" prefWidth="143.0" text="LR Parse">
-               <font>
-                  <Font name="Segoe UI" size="14.0" />
                </font>
             </Button>
          </children>
@@ -82,7 +72,8 @@
             </Menu>
             <Menu mnemonicParsing="false" text="SLR">
                <items>
-                  <MenuItem mnemonicParsing="false" text="Action 1" />
+                  <MenuItem fx:id="MakeActionTable" mnemonicParsing="false" text="Make Action and GOTO table" />
+                  <MenuItem fx:id="SLR_Parse" mnemonicParsing="false" text="Parse" />
                </items>
             </Menu>
         </menus>
