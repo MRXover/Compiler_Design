@@ -22,6 +22,11 @@ class Production {
         definition = new ArrayList<>(pro.definition);
     }
 
+    Production(ItemLR item){
+        nonTerminal = new Token(item.nonTerminal.data, item.nonTerminal.type);
+        definition = new ArrayList<>(item.definition);
+    }
+
     Production add(Token token){
         definition.add(token);
         return this;

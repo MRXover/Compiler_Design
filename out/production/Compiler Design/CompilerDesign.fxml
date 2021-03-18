@@ -76,6 +76,18 @@
                   <MenuItem fx:id="SLR_Parse" mnemonicParsing="false" text="Parse" />
                </items>
             </Menu>
+            <Menu mnemonicParsing="false" text="LR">
+               <items>
+                  <MenuItem fx:id="LR_MakeActionTable" mnemonicParsing="false" text="Make Action and GOTO table" />
+                  <MenuItem fx:id="LR_Parse" mnemonicParsing="false" text="Parse" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="LALR">
+               <items>
+                  <MenuItem fx:id="LALR_MakeActionTable" mnemonicParsing="false" text="Make Action and GOTO table" />
+                  <MenuItem fx:id="LALR_Parse" mnemonicParsing="false" text="Parse" />
+               </items>
+            </Menu>
         </menus>
       </MenuBar>
    </children>

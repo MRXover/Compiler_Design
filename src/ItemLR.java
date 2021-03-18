@@ -6,10 +6,11 @@ public class ItemLR {
     ArrayList<Token> definition;
     Token terminal;
 
-    ItemLR(Production pro){
-        nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
+    ItemLR(ItemLR item){
+        nonTerminal = new Token(item.nonTerminal.data, item.nonTerminal.type);
         definition = new ArrayList<>();
-        definition.addAll(pro.definition);
+        definition.addAll(item.definition);
+        terminal = new Token(item.terminal.data, item.terminal.type);
     }
 
     ItemLR(int indexOfDot, Production pro){
@@ -31,8 +32,44 @@ public class ItemLR {
         return definition.get(index);
     }
 
+    int size(){
+        return definition.size();
+    }
+
+    int getIndexOfDot(){
+        for (int i = 0; i < definition.size(); i++) {
+            if(definition.get(i).type.equals("DOT"))
+                return i;
+        }
+        return -1;
+    }
+
     @Override
     public String toString() {
         return nonTerminal.data + " -> " + definition + ", " + terminal.data;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ItemLR that = (ItemLR) o;
+
+        if (!nonTerminal.data.equals(that.nonTerminal.data))
+            return false;
+
+        if (!terminal.data.equals(that.terminal.data))
+            return false;
+
+        if(definition.size() != that.definition.size())
+            return false;
+
+        for (int i = 0; i < definition.size(); i++) {
+            if(!definition.get(i).data.equals(that.definition.get(i).data))
+                return false;
+        }
+
+        return true;
+    }
+
 }

@@ -4,11 +4,12 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
+import javafx.util.Pair;
 
 import java.io.*;
 import java.util.*;
 
-import static java.lang.Math.abs;
+import static java.lang.Math.*;
 
 class Grammar {
 
@@ -26,9 +27,12 @@ class Grammar {
     private Controller controller;
     HashMap<String, HashMap<String, Production>> SyntaxMatrix;
 
-    //HashSet<Production> closure;
-    ArrayList<ArrayList<Production>> items;
+    ArrayList<ArrayList<Production>> SLR_items;
+    ArrayList<ArrayList<ItemLR>> LR_items;
+    HashMap<Integer, ArrayList<ItemLR>> LALR_items;
     HashMap<Token, ArrayList<Token>> FollowLR;
+
+
 
     boolean isAugmented;
 
@@ -40,13 +44,462 @@ class Grammar {
         i.setTerminal(new Token("$"));
         System.out.println(i);
 
-        System.out.println(g.LR_CLOSURE(i));
+        //System.out.println(g.LR_CLOSURE(i));
+        g.LR_buildAllItems();
+        g.LALR_ResizeItems();
+
+        System.out.println("=======================================================================");
+        System.out.println(g.LALR_getIndexFromGoTo(g.LALR_items.get(36), new Token("c", "TERMINAL")));
+
+        //ArrayList<ItemLR> I7 = removeDuplicates(g.LR_GOTO(I6, new Token("d","TERMINAL")));
+        //System.out.println("I7 = " + I7);
+
+        //g.LR_buildAllItems();
+
+
+        //ArrayList<Token> tok = new ArrayList<>();
+        //tok.add(new Token("C"));
+        //tok.add(new Token("$"));
+        //System.out.println(tok);
+        //System.out.println(g.LR_First(tok));
     }
+
+    //============================= LALR =============================
+
+    int LALR_getIndexFromGoTo(ArrayList<ItemLR> I, Token X){
+        int LR_goto = LR_getIndexFromGoTo(I, X);
+        if(LR_goto == -1){
+            ArrayList<ItemLR> wanted = removeDuplicates(LR_GOTO(I, X));
+            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR_items.entrySet()){
+                boolean isEqual = true;
+                for(ItemLR item : pair.getValue())
+                    if (!wanted.contains(item)) {
+                        isEqual = false;
+                        break;
+                    }
+                if(isEqual)
+                    return pair.getKey();
+            }
+        }
+        if(LALR_items.get(LR_goto) != null)
+            return LR_goto;
+        else {
+            String s1 = "" + LR_goto;
+            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR_items.entrySet()){
+                String s2 = "" + pair.getKey();
+                if(s2.startsWith(s1) || s2.endsWith(s1))
+                    return pair.getKey();
+            }
+        }
+        return -1;
+    }
+
+    void LALR_ResizeItems(){
+        ArrayList<Integer> indexes = new ArrayList<>();
+        LALR_items = new HashMap<>();
+
+        for (int i = 0; i < LR_items.size(); i++) {
+            for (int j = i + 1; j < LR_items.size(); j++) {
+                if (LALR_itemsAreEqual(LR_items.get(i), LR_items.get(j))) {
+                    indexes.add(i);
+                    indexes.add(j);
+                    LALR_items.put(Integer.valueOf(i + "" + j), union(LR_items.get(i),LR_items.get(j)));
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < LR_items.size(); i++)
+            if(!indexes.contains(i))
+                LALR_items.put(i, LR_items.get(i));
+
+        //for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR_items.entrySet())
+        //    System.out.println(pair.getKey() + " " + pair.getValue());
+    }
+
+    public <T> ArrayList<T> union(ArrayList<T> list1, ArrayList<T> list2) {
+        Set<T> set = new HashSet<T>();
+        set.addAll(list1);
+        set.addAll(list2);
+        return new ArrayList<T>(set);
+    }
+
+    // O(n*log(n))
+    boolean LALR_itemsAreEqual(ArrayList<ItemLR> list1, ArrayList<ItemLR> list2){
+        HashMap<Production, Boolean> temp = new HashMap<>();
+        if(list1.size() < list2.size()) {
+            for (ItemLR item : list1)
+                temp.put(new Production(item), false);
+
+            for(ItemLR item : list2){
+                Production t = new Production(item);
+                for(ItemLR it : list1){
+                    if(new Production(item).equals(new Production(it))){
+                        temp.replace(t, true);
+                        break;
+                    }
+                }
+            }
+        }else{
+            for(ItemLR item : list2)
+                temp.put(new Production(item), false);
+
+            for(ItemLR item : list1){
+                Production t = new Production(item);
+                for(ItemLR it : list2){
+                    if(new Production(item).equals(new Production(it))){
+                        temp.replace(t, true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        for(Map.Entry<Production, Boolean> entry : temp.entrySet()) {
+            if(!entry.getValue())
+                return false;
+        }
+        return true;
+    }
+
+    // si  - перенос и размещение в стеке состояния i
+    // rj   - свёртка по продукции:
+    // acc - принятие
+    // err - ошибка
+    String LALR_ACTION(int i, Token a){
+        ItemLR st = new ItemLR(1, Productions.get(0));
+        st.setTerminal(new Token("$"));
+
+        if(a.data.equals("$") && LALR_items.get(i).contains(st))
+            return "acc";
+
+        boolean shift = false;
+        for(ItemLR item : LALR_items.get(i)){
+            int dotPos = item.getIndexOfDot();
+            if(dotPos + 1 != item.size() && item.get(dotPos + 1).data.equals(a.data)) {
+                shift = true;
+                break;
+            }
+        }
+        if(shift){
+            //System.out.println("ACTION( " + i + ", " + a.data + ") = s" + LR_getIndexFromGoTo(LR_items.get(i),a));
+            return "s" + LALR_getIndexFromGoTo(LALR_items.get(i),a);
+        }
+
+        for(ItemLR item : LALR_items.get(i)){
+            if(!item.terminal.data.equals(a.data))
+                continue;
+            if(item.nonTerminal.data.equals(startSymbol.data))
+                continue;
+            if(item.getIndexOfDot() + 1 == item.size()) {
+                Production wanted = new Production(item);
+                wanted.definition.remove(wanted.getIndexOfDot());
+                //System.out.println("ACTION( " + i + ", " + a.data + ") = r" + Productions.indexOf(wanted));
+                return "r" + Productions.indexOf(wanted);
+            }
+        }
+        return "err";
+    }
+
+    public void LALR_Parser(ArrayList<Token> Input){
+        Stage newWindow = new Stage();
+        GridPane root = new GridPane();
+
+        newWindow.setX(200);
+        newWindow.setY(100);
+
+        root.setPadding(new Insets(20));
+        root.setHgap(25);
+        root.setVgap(15);
+
+        root.add(new Label("Строка"), 0, 0);
+        root.add(new Label("Стек"), 1, 0);
+        root.add(new Label("Символы"), 2, 0);
+        root.add(new Label("Вход"), 3, 0);
+        root.add(new Label("Действие"), 4, 0);
+
+        ArrayList<Token> input = new ArrayList<>(Input);
+        input.add(new Token("$", "END_MARKER"));
+
+        ArrayList<Token> symbols = new ArrayList<>();
+        symbols.add(new Token("$", "END_MARKER"));
+
+        System.out.println(Input);
+
+        Stack<Integer> stack = new Stack<>();
+        stack.push(0);
+
+        Token a = input.get(0);
+        int pointer = 0;
+        int stringIndex = 1;
+
+        while (true) {
+            int s = stack.peek();
+
+            root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
+            root.add(new Label(String.valueOf(stack)), 1, stringIndex);
+
+            String symbolsString = "";
+            for(Token t : symbols)
+                symbolsString += t.data;
+
+            root.add(new Label(symbolsString), 2, stringIndex);
+
+            String inputString = "";
+            for(Token t : input.subList(pointer, input.size()))
+                inputString += t.data;
+            root.add(new Label(inputString), 3, stringIndex);
+
+            String action = LALR_ACTION(s, a);
+            if ( action.charAt(0) == 's'){
+                symbols.add(input.get(pointer));
+                stack.push(Integer.valueOf(action.substring(1)));
+                pointer++;
+                a = input.get(pointer);
+                System.out.println("Перенос в " + Integer.valueOf(action.substring(1)));
+                root.add(new Label("Перенос в " + Integer.valueOf(action.substring(1))), 4, stringIndex);
+            } else if (action.charAt(0) == 'r'){
+                int prodNumber = Integer.parseInt(action.substring(1, action.length()));
+                String shift = "Свертка по " + Productions.get(prodNumber).nonTerminal.data + " -> ";
+                for (Token t : Productions.get(prodNumber).definition){
+                    shift += t.data;
+                    stack.pop();
+                }
+                System.out.println(shift);
+                root.add(new Label(shift), 4, stringIndex);
+                int count = Productions.get(prodNumber).definition.size();
+                for (int j = 0; j < count; j++){
+                    symbols.remove(symbols.size() - 1);
+                }
+                symbols.add(Productions.get(prodNumber).nonTerminal);
+                stack.push(LALR_getIndexFromGoTo(LALR_items.get(stack.peek()), Productions.get(prodNumber).nonTerminal));
+            } else if(action.charAt(0) == 'a'){
+                System.out.println("SUCCESS");
+                root.add(new Label("SUCCESS"), 4, stringIndex);
+                break;
+            } else if(action.charAt(0) == 'e'){
+                System.out.println("ERROR");
+                root.add(new Label("ERROR"), 4, stringIndex);
+                break;
+            }
+            stringIndex++;
+
+        }
+
+        ScrollPane scrollPane = new ScrollPane(root);
+
+        Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
+        newWindow.setTitle("LR Parse table");
+        newWindow.setScene(scene);
+
+        newWindow.show();
+    }
+
+    ///============================ LALR =============================
+
 
     //============================== LR ==============================
 
 
+    // si  - перенос и размещение в стеке состояния i
+    // rj   - свёртка по продукции:
+    // acc - принятие
+    // err - ошибка
+    String LR_ACTION(int i, Token a){
+        ItemLR st = new ItemLR(1, Productions.get(0));
+        st.setTerminal(new Token("$"));
+
+        if(a.data.equals("$") && LR_items.get(i).contains(st))
+            return "acc";
+
+        boolean shift = false;
+        for(ItemLR item : LR_items.get(i)){
+            int dotPos = item.getIndexOfDot();
+            if(dotPos + 1 != item.size() && item.get(dotPos + 1).data.equals(a.data)) {
+                shift = true;
+                break;
+            }
+        }
+        if(shift){
+            //System.out.println("ACTION( " + i + ", " + a.data + ") = s" + LR_getIndexFromGoTo(LR_items.get(i),a));
+            return "s" + LR_getIndexFromGoTo(LR_items.get(i),a);
+        }
+
+        for(ItemLR item : LR_items.get(i)){
+            if(!item.terminal.data.equals(a.data))
+                continue;
+            if(item.nonTerminal.data.equals(startSymbol.data))
+                continue;
+            if(item.getIndexOfDot() + 1 == item.size()) {
+                Production wanted = new Production(item);
+                wanted.definition.remove(wanted.getIndexOfDot());
+                //System.out.println("ACTION( " + i + ", " + a.data + ") = r" + Productions.indexOf(wanted));
+                return "r" + Productions.indexOf(wanted);
+            }
+        }
+
+        return "err";
+    }
+
+    void LR_buildAllItems(){
+        int index = 0;
+        int oldIndex = 0;
+        LR_items = new ArrayList<>();
+
+        ItemLR p1 = new ItemLR(0, Productions.get(0));
+        p1.setTerminal(new Token("$"));
+        // I0
+        LR_items.add(LR_CLOSURE(p1));
+
+        ArrayList<Token> tokensToCheck = new ArrayList<>();
+
+        for(ItemLR item : LR_items.get(0)){
+            int ind = item.getIndexOfDot();
+            if(ind + 1 == item.definition.size())
+                continue;
+            Token t = item.definition.get(ind + 1);
+            if(!tokensToCheck.contains(t))
+                tokensToCheck.add(t);
+        }
+        // 1st Iteration
+        for(Token tok : tokensToCheck){
+            LR_items.add(removeDuplicates(LR_GOTO(LR_items.get(0), tok)));
+            index++;
+        }
+        oldIndex = index;
+        int left = 1;
+
+        tokensToCheck.clear();
+
+        do{
+            for (int i = left; i < oldIndex + 1; i++) {
+                for (ItemLR item : LR_items.get(i)) {
+                    int ind = item.getIndexOfDot();
+                    if (ind + 1 == item.definition.size())
+                        continue;
+                    Token t = item.definition.get(ind + 1);
+                    if (!tokensToCheck.contains(t))
+                        tokensToCheck.add(t);
+                }
+                for (Token t : tokensToCheck) {
+                    ArrayList<ItemLR> X = removeDuplicates(LR_GOTO(LR_items.get(i), t));
+                    if(!LR_containsItem(X)) {
+                        LR_items.add(X);
+                        index++;
+                    }
+                }
+                tokensToCheck.clear();
+            }
+            left = oldIndex;
+            oldIndex = index;
+        } while( left != index );
+        /*
+        int i = 0;
+        for(ArrayList<ItemLR> list : LR_items){
+            System.out.println();
+            System.out.println("I" + i + " =");
+            for(ItemLR item : list)
+                System.out.println(item);
+            i++;
+        }
+         */
+    }
+
+    boolean LR_containsItem(ArrayList<ItemLR> items){
+        boolean currentIsEqual = true;
+        for (ArrayList<ItemLR> lr_item : LR_items) {
+            if (items.size() != lr_item.size())
+                continue;
+            int j = 0;
+            for (ItemLR item : items) {
+                if (!item.equals(lr_item.get(j))) {
+                    currentIsEqual = false;
+                    break;
+                }
+                j++;
+            }
+            if (currentIsEqual)
+                return true;
+            currentIsEqual = true;
+        }
+
+        return false;
+    }
+
+    int LR_getIndexFromGoTo(ArrayList<ItemLR> I, Token X){
+        ArrayList<ItemLR> wanted = removeDuplicates(LR_GOTO(I, X));
+        for(int i = 0; i < LR_items.size(); i++){
+            if(LR_items.get(i).equals(wanted))
+                return i;
+        }
+        return -1;
+    }
+
+    ArrayList<ItemLR> LR_GOTO(ArrayList<ItemLR> I, Token X){
+        ArrayList<ItemLR> J = new ArrayList<>();
+        for(ItemLR item : I){
+            if(item.definition.contains(X)){
+                ItemLR temp = new ItemLR(item);
+
+                int indexOfDot = temp.definition.indexOf(new Token("•", "DOT"));
+
+                if(indexOfDot + 1 == temp.definition.size()){
+                    continue;
+                }
+
+                if( abs(indexOfDot - temp.definition.indexOf(X) ) > 1){
+                    continue;
+                }
+
+                // если точка правее токена
+                if(indexOfDot > temp.definition.lastIndexOf(X))
+                    continue;
+
+                temp.definition.set(indexOfDot, temp.definition.get(indexOfDot + 1));
+                temp.definition.set(indexOfDot + 1, new Token("•", "DOT"));
+
+                J.addAll(LR_CLOSURE(temp));
+            }
+        }
+        return J;
+    }
+
+    ArrayList<Token> LR_First(ArrayList<Token> input){
+        ArrayList<Token> result = new ArrayList<>();
+
+        for (int i = 0; i < input.size(); i++){
+            if(input.get(i).data.equals("#")){
+                ArrayList<Token> temp = new ArrayList<>();
+                for(int j = i + 1; j < input.size(); j++)
+                    temp.add(input.get(j));
+                result = LR_First(temp);
+                break;
+            } else{
+                if (Terminals.contains(input.get(i)) || input.get(i).data.equals("$")){
+                    result.add(input.get(i));
+                    return result;
+                } else {
+                    ArrayList<Token> tokensFromNonterminal = LL_First(input.get(i));
+                    if(tokensFromNonterminal.contains(new Token("#"))){
+                        result.addAll(tokensFromNonterminal);
+                        result.remove(new Token("#"));
+                        ArrayList<Token> temp = new ArrayList<>();
+                        for(int j = i + 1; j < input.size(); j++)
+                            temp.add(input.get(j));
+                        result.addAll(LR_First(temp));
+                        break;
+                    } else {
+                        result.addAll(tokensFromNonterminal);
+                        return result;
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
     ArrayList<ItemLR> LR_CLOSURE(ItemLR I){
+        boolean debug = false;
         HashMap<String, Boolean> added = new HashMap<>();
         for (Token tok : NonTerminals)
             added.put(tok.data, false);
@@ -54,8 +507,6 @@ class Grammar {
         ArrayList<ItemLR> set = new ArrayList<>();
         set.add(I);
         ArrayDeque<Token> q = new ArrayDeque<>();
-        System.out.println(I);
-        System.out.println(I.definition.indexOf(new Token("•", "DOT")));
         if(I.definition.indexOf(new Token("•", "DOT")) + 1 == I.definition.size()){
             set.add(I);
             return set;
@@ -63,29 +514,143 @@ class Grammar {
 
         q.addFirst(I.get(I.definition.indexOf(new Token("•", "DOT")) + 1));
 
+        int step = 1;
+        ArrayList<Token> rightTokens = new ArrayList<>();
+        rightTokens.add(I.terminal);
+        ArrayList<Token> first = new ArrayList<>();
+
         do {
+            if(debug){
+                System.out.println();
+                System.out.println("STEP " + step);
+                System.out.println(q);
+                System.out.println(added);
+            }
+
             for(Production pro : Productions){
                 if(pro.nonTerminal.data.equals(q.peekFirst().data)){
-                    ItemLR t = new ItemLR(0, pro);
-                    if(!set.contains(t)) {
-                        set.add(t);
-                        Token tok = t.definition.get(t.definition.indexOf(new Token("•", "DOT")) + 1);
+                    if(debug) System.out.println("pro = " + pro);
 
-                        if(!tok.type.equals("TERMINAL") && !added.get(tok.data) ){
-                            q.addLast(tok);
-                        }
+                    for(Token tok : rightTokens){
+                        ItemLR temp = new ItemLR(0,pro);
+                        temp.setTerminal(tok);
+                        if(debug) System.out.println("Добавлено " + temp);
+                        if(debug) System.out.println(pro);
+                        //if(NonTerminals.contains(temp.definition.get(1)) && added.get(temp.definition.get(1).data))
+                        q.addLast(temp.definition.get(1));
+                        if(debug) System.out.println("q + " + temp.definition.get(1));
+                        set.add(temp);
+
+                        for(int i = temp.definition.indexOf(new Token("•", "DOT")) + 2; i < temp.definition.size(); i++)
+                            first.add(temp.definition.get(i));
+
                     }
+
                 }
             }
+            rightTokens.clear();
+            rightTokens.addAll(LR_First(first));
+
             added.replace(q.peekFirst().data, true);
             q.pollFirst();
 
-            // чистка
-            q.removeIf(t -> added.get(t.data));
-
-        } while (!q.isEmpty());
-
+            step++;
+        } while (!q.isEmpty() );
         return set;
+    }
+
+    public void LR_Parser(ArrayList<Token> Input){
+        Stage newWindow = new Stage();
+        GridPane root = new GridPane();
+
+        newWindow.setX(200);
+        newWindow.setY(100);
+
+        root.setPadding(new Insets(20));
+        root.setHgap(25);
+        root.setVgap(15);
+
+        root.add(new Label("Строка"), 0, 0);
+        root.add(new Label("Стек"), 1, 0);
+        root.add(new Label("Символы"), 2, 0);
+        root.add(new Label("Вход"), 3, 0);
+        root.add(new Label("Действие"), 4, 0);
+
+        ArrayList<Token> input = new ArrayList<>(Input);
+        input.add(new Token("$", "END_MARKER"));
+
+        ArrayList<Token> symbols = new ArrayList<>();
+        symbols.add(new Token("$", "END_MARKER"));
+
+        System.out.println(Input);
+
+        Stack<Integer> stack = new Stack<>();
+        stack.push(0);
+
+        Token a = input.get(0);
+        int pointer = 0;
+        int stringIndex = 1;
+
+        while (true) {
+            int s = stack.peek();
+
+            root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
+            root.add(new Label(String.valueOf(stack)), 1, stringIndex);
+
+            String symbolsString = "";
+            for(Token t : symbols)
+                symbolsString += t.data;
+
+            root.add(new Label(symbolsString), 2, stringIndex);
+
+            String inputString = "";
+            for(Token t : input.subList(pointer, input.size()))
+                inputString += t.data;
+            root.add(new Label(inputString), 3, stringIndex);
+
+            String action = LR_ACTION(s, a);
+            if ( action.charAt(0) == 's'){
+                symbols.add(input.get(pointer));
+                stack.push(Integer.valueOf(action.substring(1)));
+                pointer++;
+                a = input.get(pointer);
+                System.out.println("Перенос в " + Integer.valueOf(action.substring(1)));
+                root.add(new Label("Перенос в " + Integer.valueOf(action.substring(1))), 4, stringIndex);
+            } else if (action.charAt(0) == 'r'){
+                int prodNumber = Integer.parseInt(action.substring(1, action.length()));
+                String shift = "Свертка по " + Productions.get(prodNumber).nonTerminal.data + " -> ";
+                for (Token t : Productions.get(prodNumber).definition){
+                    shift += t.data;
+                    stack.pop();
+                }
+                System.out.println(shift);
+                root.add(new Label(shift), 4, stringIndex);
+                int count = Productions.get(prodNumber).definition.size();
+                for (int j = 0; j < count; j++){
+                    symbols.remove(symbols.size() - 1);
+                }
+                symbols.add(Productions.get(prodNumber).nonTerminal);
+                stack.push(LR_getIndexFromGoTo(LR_items.get(stack.peek()), Productions.get(prodNumber).nonTerminal));
+            } else if(action.charAt(0) == 'a'){
+                System.out.println("SUCCESS");
+                root.add(new Label("SUCCESS"), 4, stringIndex);
+                break;
+            } else if(action.charAt(0) == 'e'){
+                System.out.println("ERROR");
+                root.add(new Label("ERROR"), 4, stringIndex);
+                break;
+            }
+            stringIndex++;
+
+        }
+
+        ScrollPane scrollPane = new ScrollPane(root);
+
+        Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
+        newWindow.setTitle("LR Parse table");
+        newWindow.setScene(scene);
+
+        newWindow.show();
     }
 
     ///============================= LR ==============================
@@ -186,7 +751,7 @@ class Grammar {
         return pro;
     }
 
-    public void SLRParser(ArrayList<Token> Input){
+    public void SLR_Parser(ArrayList<Token> Input){
         Stage newWindow = new Stage();
         GridPane root = new GridPane();
 
@@ -238,11 +803,11 @@ class Grammar {
             String action = ACTION(s, a);
             if ( action.charAt(0) == 's'){
                 symbols.add(input.get(pointer));
-                stack.push(t);
+                stack.push(Integer.valueOf(action.substring(1)));
                 pointer++;
                 a = input.get(pointer);
-                System.out.println("Перенос в " + t);
-                root.add(new Label("Перенос в " + t), 4, stringIndex);
+                System.out.println("Перенос в " + Integer.valueOf(action.substring(1)));
+                root.add(new Label("Перенос в " + Integer.valueOf(action.substring(1))), 4, stringIndex);
             } else if (action.charAt(0) == 'r'){
                 int prodNumber = Integer.parseInt(action.substring(1, action.length()));
                 String shift = "Свертка по " + Productions.get(prodNumber).nonTerminal.data + " -> ";
@@ -257,7 +822,7 @@ class Grammar {
                     symbols.remove(symbols.size() - 1);
                 }
                 symbols.add(Productions.get(prodNumber).nonTerminal);
-                stack.push(getIndexFromGoTo(items.get(stack.peek()), Productions.get(prodNumber).nonTerminal));
+                stack.push(getIndexFromGoTo(SLR_items.get(stack.peek()), Productions.get(prodNumber).nonTerminal));
             } else if(action.charAt(0) == 'a'){
                 System.out.println("SUCCESS");
                 root.add(new Label("SUCCESS"), 4, stringIndex);
@@ -285,13 +850,13 @@ class Grammar {
         int oldIndex = 0;
         Production p1 = createItem(0, Productions.get(0));
 
-        items = new ArrayList<>();
+        SLR_items = new ArrayList<>();
         // I0
-        items.add(closure(p1));
+        SLR_items.add(closure(p1));
 
         ArrayList<Token> tokensToCheck = new ArrayList<>();
 
-        for(Production pro : items.get(0)){
+        for(Production pro : SLR_items.get(0)){
             int ind = pro.getIndexOfDot();
             if(ind + 1 == pro.definition.size())
                 continue;
@@ -302,7 +867,7 @@ class Grammar {
 
         // 1st Iteration
         for(Token tok : tokensToCheck){
-            items.add(removeDuplicates(GoTo(items.get(0), tok)));
+            SLR_items.add(removeDuplicates(GoTo(SLR_items.get(0), tok)));
             index++;
             //System.out.println(index + " " +tok.data + " = " + removeDuplicates(GoTo(items.get(0), tok)));
         }
@@ -313,7 +878,7 @@ class Grammar {
 
         do{
             for (int i = left; i < oldIndex + 1; i++) {
-                for (Production pro : items.get(i)) {
+                for (Production pro : SLR_items.get(i)) {
                     int ind = pro.getIndexOfDot();
                     if (ind + 1 == pro.definition.size())
                         continue;
@@ -322,9 +887,9 @@ class Grammar {
                         tokensToCheck.add(t);
                 }
                 for (Token t : tokensToCheck) {
-                    ArrayList<Production> X = removeDuplicates(GoTo(items.get(i), t));
-                    if (!items.contains(X)) {
-                        items.add(X);
+                    ArrayList<Production> X = removeDuplicates(GoTo(SLR_items.get(i), t));
+                    if (!SLR_items.contains(X)) {
+                        SLR_items.add(X);
                         index++;
                     }
                 }
@@ -339,18 +904,17 @@ class Grammar {
 
     int getIndexFromGoTo(ArrayList<Production> I, Token X){
         ArrayList<Production> wanted = removeDuplicates(GoTo(I, X));
-        for(int i = 0; i < items.size(); i++){
-            if(items.get(i).equals(wanted))
+        for(int i = 0; i < SLR_items.size(); i++){
+            if(SLR_items.get(i).equals(wanted))
                 return i;
         }
         return -1;
     }
 
     // si  - перенос и размещение в стеке состояния i
-    // r   - свёртка по продукции:
+    // rj   - свёртка по продукции:
     // acc - принятие
     // Err - ошибка
-    int t;
     String ACTION(int i, Token a){
 
         // Очень сомнительное условие
@@ -362,11 +926,10 @@ class Grammar {
 
         int state = -1;
         if(i != -1)
-            state = getIndexFromGoTo(items.get(i),a);
+            state = getIndexFromGoTo(SLR_items.get(i),a);
         if(state != -1){
-            t = state;
-            System.out.println("ACTION( " + i + ", " + a.data + ") = s" + t);
-            return "s" + t;
+            System.out.println("ACTION( " + i + ", " + a.data + ") = s" + state);
+            return "s" + state;
         }
 
         // разве по первой продукции?...
@@ -374,12 +937,12 @@ class Grammar {
         if(i == -1)
             return "err";
 
-        Token t = items.get(i).get(0).nonTerminal;
+        Token t = SLR_items.get(i).get(0).nonTerminal;
 
         ArrayList<Token> f = FollowLR.get(t);
         for (Token tok : f) {
             if (tok.data.equals(a.data)) {
-                for(Production pro : items.get(i)) {
+                for(Production pro : SLR_items.get(i)) {
                     if (pro.getIndexOfDot() + 1 == pro.definition.size()) {
                         if (pro.nonTerminal.equals(t)) {
                             Production wanted = new Production(pro);
@@ -515,7 +1078,7 @@ class Grammar {
             return result;
         }
         for(Production pro : Productions){
-            if(pro.nonTerminal.equals(X.get(0))){
+            if(pro.nonTerminal.data.equals(X.get(0).data)){
                 boolean allProductionsHasEps = true;
                 for(int i = 0; i < pro.size(); i++){
                     Token Yi = pro.get(i);
