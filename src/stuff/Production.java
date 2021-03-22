@@ -1,47 +1,49 @@
+package stuff;
+
 import java.util.ArrayList;
 import java.util.Objects;
 
-class Production {
-    Token nonTerminal;
-    ArrayList<Token> definition;
+public class Production {
+    public Token nonTerminal;
+    public ArrayList<Token> definition;
 
 
-    Production(Token left){
+    public Production(Token left){
         nonTerminal = left;
         definition = new ArrayList<>();
     }
 
-    Production(Token left, boolean addEps){
+    public Production(Token left, boolean addEps){
         nonTerminal = left;
         definition = new ArrayList<>();
         definition.add(new Token("#", "EPSILON"));
     }
 
-    Production(Production pro){
+    public Production(Production pro){
         nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
         definition = new ArrayList<>(pro.definition);
     }
 
-    Production(ItemLR item){
+    public Production(ItemLR item){
         nonTerminal = new Token(item.nonTerminal.data, item.nonTerminal.type);
         definition = new ArrayList<>(item.definition);
     }
 
-    Production add(Token token){
+    public Production add(Token token){
         definition.add(token);
         return this;
     }
 
-    int size(){
+    public int size(){
         return definition.size();
     }
 
-    Token get(int index){
+    public Token get(int index){
         return definition.get(index);
     }
 
 
-    int getTokenIndex(Token token){
+    public int getTokenIndex(Token token){
         for (int i = 0; i < definition.size(); i++) {
             if(definition.get(i).data.equals(token.data))
                 return i;
@@ -49,13 +51,13 @@ class Production {
         return -1;
     }
 
-    boolean hasEpsilonProduction(){
+    public boolean hasEpsilonProduction(){
         if(definition.size() != 1)
             return false;
         return definition.get(0).data.equals("#");
     }
 
-    int getIndexOfDot(){
+    public int getIndexOfDot(){
         for (int i = 0; i < definition.size(); i++) {
             if(definition.get(i).type.equals("DOT"))
                 return i;

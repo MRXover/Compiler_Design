@@ -1,42 +1,46 @@
+package stuff;
+
+import stuff.Production;
+import stuff.Token;
+
 import java.util.ArrayList;
+
+import static stuff.SupportFunctions.createDOT;
 
 public class ItemLR {
     // nonTerminal : definition , Terminal
-    Token nonTerminal;
-    ArrayList<Token> definition;
-    Token terminal;
+    public Token nonTerminal;
+    public ArrayList<Token> definition;
+    public Token terminal;
 
-    ItemLR(ItemLR item){
+    public ItemLR(ItemLR item){
         nonTerminal = new Token(item.nonTerminal.data, item.nonTerminal.type);
         definition = new ArrayList<>();
         definition.addAll(item.definition);
         terminal = new Token(item.terminal.data, item.terminal.type);
     }
 
-    ItemLR(int indexOfDot, Production pro){
+    public ItemLR(int indexOfDot, Production pro){
         nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
         definition = new ArrayList<>();
         definition.addAll(pro.definition);
-        definition.add(indexOfDot, new Token("•", "DOT"));
+        definition.add(indexOfDot, createDOT());
     }
 
-    void setTerminal(Token t){
+    public void setTerminal(Token t){
         terminal = new Token(t.data, t.type);
     }
 
-    Token getTerminal(){
-        return terminal;
-    }
 
-    Token get(int index){
+    public Token get(int index){
         return definition.get(index);
     }
 
-    int size(){
+    public int size(){
         return definition.size();
     }
 
-    int getIndexOfDot(){
+    public int getIndexOfDot(){
         for (int i = 0; i < definition.size(); i++) {
             if(definition.get(i).type.equals("DOT"))
                 return i;

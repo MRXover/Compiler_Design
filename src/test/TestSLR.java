@@ -1,9 +1,18 @@
+package test;
+
+import automatons.SLR_Automaton;
+import main.Grammar;
+import main.GrammarType;
+import main.Parser;
+import stuff.Production;
 import org.junit.Test;
+import stuff.*;
+import static stuff.SupportFunctions.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class TestLR {
+public class TestSLR {
     private Grammar grammar;
 
     @Test
@@ -14,9 +23,11 @@ public class TestLR {
         ArrayList<Production> expected = new ArrayList<>();
 
         for(Production pro : grammar.Productions)
-            expected.add(grammar.createItem(0, pro));
+            expected.add(createItem(0, pro));
 
-        ArrayList<Production> result = grammar.closure(expected.get(0));
+        SLR_Automaton SLR = new SLR_Automaton(grammar);
+
+        ArrayList<Production> result = SLR.CLOSURE(expected.get(0));
 
         for(int i = 0; i < expected.size(); i++){
             //System.out.println(expected.get(i) + " == " + result.get(i));
@@ -28,20 +39,21 @@ public class TestLR {
     public void testGoTo() throws IOException {
         grammar = new Grammar("example10.txt");
         grammar.augmentGivenGrammar();
+        SLR_Automaton SLR = new SLR_Automaton(grammar);
 
         ArrayList<Production> C = new ArrayList<>();
         ArrayList<Production> expected = new ArrayList<>();
 
-        Production p1 = grammar.createItem(1, grammar.Productions.get(0));
-        Production p2 = grammar.createItem(1, grammar.Productions.get(1));
+        Production p1 = createItem(1, grammar.Productions.get(0));
+        Production p2 = createItem(1, grammar.Productions.get(1));
         C.add(p1);
         C.add(p2);
 
-        expected.add(grammar.createItem(2, grammar.Productions.get(1)));
+        expected.add(createItem(2, grammar.Productions.get(1)));
         for (int i = 3; i < grammar.Productions.size(); i++)
-            expected.add(grammar.createItem(0, grammar.Productions.get(i)));
+            expected.add(createItem(0, grammar.Productions.get(i)));
 
-        ArrayList<Production> result = grammar.GoTo(C, new Token("+", "TERMINAL"));
+        ArrayList<Production> result = SLR.GOTO(C, new Token("+", "TERMINAL"));
 
         for(int i = 0; i < expected.size(); i++){
             //System.out.println(expected.get(i) + " == " + result.get(i));
@@ -54,50 +66,23 @@ public class TestLR {
     public void testGoTo1() throws IOException {
         grammar = new Grammar("example10.txt");
         grammar.augmentGivenGrammar();
+        SLR_Automaton SLR = new SLR_Automaton(grammar);
 
         ArrayList<Production> C = new ArrayList<>();
-        Production p1 = grammar.createItem(0, grammar.Productions.get(0));
-        Production p2 = grammar.createItem(1, grammar.Productions.get(1));
+        Production p1 = createItem(0, grammar.Productions.get(0));
+        Production p2 = createItem(1, grammar.Productions.get(1));
         //C.add(p1);
         //C.add(p2);
-        C = grammar.closure(p1);
+        C = SLR.CLOSURE(p1);
 
         System.out.println("P1 = " + p1);
         System.out.println("P2 = " + p2);
 
-        ArrayList<Production> result = grammar.GoTo(C, new Token("T", "NONTERMINAL"));
+        ArrayList<Production> result = SLR.GOTO(C, new Token("T", "NONTERMINAL"));
         System.out.println(result);
     }
 
 
-
-    @Test
-    public void testLRParser() throws IOException {
-        grammar = new Grammar("example10.txt");
-        grammar.augmentGivenGrammar();
-
-        ArrayList<Token> input = grammar.Lexer("ID * ID");
-
-        grammar.SLR_Parser(input);
-
-    }
-
-    @Test
-    public void testBuildAllItems() throws IOException {
-        grammar = new Grammar("example10.txt");
-        grammar.augmentGivenGrammar();
-
-        grammar.buildAllItems();
-    }
-
-    @Test
-    public void testACTION() throws IOException {
-        grammar = new Grammar("example10.txt");
-        grammar.augmentGivenGrammar();
-
-
-
-    }
 
 
 }

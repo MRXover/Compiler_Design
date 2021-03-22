@@ -1,3 +1,7 @@
+package main;
+
+import automatons.*;
+import stuff.*;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -6,17 +10,19 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import stuff.Token;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Scanner;
 
 public class Controller {
 
     private Grammar Grammar;
-
 
     @FXML
     public TextArea LogConsole;
@@ -30,14 +36,10 @@ public class Controller {
     @FXML
     public Button LoadGrammar;
 
-
-    @FXML
-    public Button LoadFile;
     @FXML
     private Button isLeftRecursive;
     @FXML
     private Button LeftFactoring;
-
     @FXML
     public Button SaveFile;
 
@@ -51,9 +53,7 @@ public class Controller {
     @FXML
     private MenuItem MakeSyntaxMatrix;
     @FXML
-    private MenuItem LLParse;
-    @FXML
-    private MenuItem TEST;
+    private MenuItem LL_Parse;
     @FXML
     private MenuItem MakeActionTable;
     @FXML
@@ -68,6 +68,12 @@ public class Controller {
     private MenuItem LALR_MakeActionTable;
     @FXML
     private MenuItem LALR_Parse;
+
+
+    LL_Automaton   LL;
+    SLR_Automaton  SLR;
+    LR_Automaton   LR;
+    LALR_Automaton LALR;
 
     @FXML
     void initialize() {
@@ -85,13 +91,12 @@ public class Controller {
             LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
         });
 
-        LoadFile.setOnAction(actionEvent -> {
-            Node source = (Node) actionEvent.getSource();
-            Stage Stage = (Stage) source.getScene().getWindow();
+        LoadFromFile.setOnAction(actionEvent -> {
+            Stage Stage = (Stage) menuBar.getScene().getWindow();
 
             FileChooser fileChooser = new FileChooser();
-            FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
-            fileChooser.getExtensionFilters().add(txtfilter);
+            FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
+            fileChooser.getExtensionFilters().add(txtFilter);
             fileChooser.setTitle("File choosing");
             fileChooser.setInitialDirectory(new File("./"));
             File fileObject = fileChooser.showOpenDialog(Stage);
@@ -102,7 +107,16 @@ public class Controller {
             }
 
             try {
-                Grammar = new Grammar(this, fileObject.getPath());
+                Grammar = new Grammar(fileObject.getPath());
+                String str = "";
+                try (Scanner scanner = new Scanner(fileObject)) {
+                    while (scanner.hasNextLine())
+                        str += scanner.nextLine() + "\n";
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                }
+                GrammarArea.setText("");
+                GrammarArea.appendText(str + "\n");
             } catch (Exception e) {
                 LogConsole.appendText("Input error\n");
                 e.printStackTrace();
@@ -181,29 +195,6 @@ public class Controller {
 
         });
 
-        LoadFromFile.setOnAction(actionEvent -> {
-            Stage Stage = (Stage) menuBar.getScene().getWindow();
-
-            FileChooser fileChooser = new FileChooser();
-            FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
-            fileChooser.getExtensionFilters().add(txtfilter);
-            fileChooser.setTitle("File choosing");
-            fileChooser.setInitialDirectory(new File("./"));
-            File fileObject = fileChooser.showOpenDialog(Stage);
-
-            if(fileObject == null){
-                LogConsole.appendText("Input error\n");
-                return;
-            }
-
-            try {
-                Grammar = new Grammar(this, fileObject.getPath());
-            } catch (Exception e) {
-                LogConsole.appendText("Input error\n");
-                e.printStackTrace();
-            }
-        });
-
 
         //============================== LL ==============================//
         MakeFirstAndFollow.setOnAction(actionEvent -> {
@@ -217,12 +208,13 @@ public class Controller {
                 return;
             }
             try {
-                Grammar.makeFirstSet();
-                Grammar.makeFollowSet();
+                LL = new LL_Automaton(Grammar, this);
+                LL.makeFirstSet();
+                LL.makeFollowSet();
 
-                Grammar.printFirstSet();
+                LL.printFirstSet();
                 System.out.println();
-                Grammar.printFollowSet();
+                LL.printFollowSet();
             } catch (Exception e){
                 LogConsole.appendText(e.getMessage());
             }
@@ -233,15 +225,17 @@ public class Controller {
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
             }
-            if(Grammar.FirstSet == null){
-                Grammar.makeFirstSet();
-                Grammar.makeFollowSet();
+            if(LL == null)
+                LL = new LL_Automaton(Grammar, this);
+            if(LL.FirstSet == null){
+                LL.makeFirstSet();
+                LL.makeFollowSet();
             }
 
-            Grammar.makeSyntaxMatrix();
+            LL.makeSyntaxMatrix();
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
-            //root.setGridLinesVisible(true);
+            root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -261,12 +255,12 @@ public class Controller {
 
             for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
                 for (int j = 0; j < Grammar.Terminals.size(); j++) {
-                    if (Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data) == null) {
+                    if (LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data) == null) {
                         GridPane.setHalignment(new Label(""), HPos.LEFT);
                         root.add(new Label(""), j + 1, i + 1);
                     } else {
-                        GridPane.setHalignment(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), HPos.LEFT);
-                        root.add(new Label(Grammar.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), j + 1, i + 1);
+                        GridPane.setHalignment(new Label(LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), HPos.LEFT);
+                        root.add(new Label(LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), j + 1, i + 1);
                     }
                 }
             }
@@ -279,19 +273,21 @@ public class Controller {
 
         });
 
-        LLParse.setOnAction(actionEvent -> {
+        LL_Parse.setOnAction(actionEvent -> {
             if(Grammar == null) {
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
             }
-            if(Grammar.FirstSet == null){
-                Grammar.makeFirstSet();
-                Grammar.makeFollowSet();
+            if(LL == null)
+                LL = new LL_Automaton(Grammar, this);
+            if(LL.FirstSet == null){
+                LL.makeFirstSet();
+                LL.makeFollowSet();
             }
-            if(Grammar.SyntaxMatrix == null){
-                Grammar.makeSyntaxMatrix();
+            if(LL.SyntaxMatrix == null){
+                LL.makeSyntaxMatrix();
             }
-            Grammar.LL_Parse(Grammar.Lexer(CodeArea.getText()));
+            new Parser(GrammarType.LL, Grammar).Parse(Grammar.Lexer(CodeArea.getText()),LL);
         });
         ///============================= LL ==============================//
 
@@ -305,8 +301,8 @@ public class Controller {
 
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
-
-            Grammar.buildAllItems();
+            SLR = new SLR_Automaton(Grammar);
+            SLR.buildAllItems();
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
@@ -318,26 +314,27 @@ public class Controller {
             root.setHgap(25);
             root.setVgap(15);
 
-            int leftNonTerminalsPosition  = Grammar.Terminals.size();
-            int rightNonTerminalsPosition = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
+            int leftNonTerminalsPos  = Grammar.Terminals.size();
+            int rightNonTerminalsPos = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
 
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
                 root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             }
-            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
+            for (int i = leftNonTerminalsPos; i < rightNonTerminalsPos; i++) {
+                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPos +1).data)), i + 1, 0);
             }
 
 
-            for (int i = 0; i < Grammar.SLR_items.size(); i++) {
+            for (int i = 0; i < SLR.items.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
                 root.add(new Label(String.valueOf(i)), 0, i+1);
             }
 
             // GOTO
-            for (int i = 0; i < Grammar.SLR_items.size(); i++) {
-                for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
-                    int result = Grammar.getIndexFromGoTo(Grammar.SLR_items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+            for (int i = 0; i < SLR.items.size(); i++) {
+                for (int j = leftNonTerminalsPos; j < rightNonTerminalsPos+1; j++) {
+                    int result = SLR.getIndexFromGOTO(SLR.items.get(i),
+                            Grammar.NonTerminals.get(j - leftNonTerminalsPos));
                     if( result == -1)
                         root.add(new Label(" "), j, i+1);
                     else
@@ -346,8 +343,8 @@ public class Controller {
             }
 
             // ACTION
-            Grammar.buildFollowLR();
-            for (int i = 0; i < Grammar.SLR_items.size(); i++) {
+            SLR.buildFollow();
+            for (int i = 0; i < SLR.items.size(); i++) {
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
                     if(j != Grammar.Terminals.size())
@@ -355,7 +352,7 @@ public class Controller {
                     else
                         a = new Token("$", "END_MARKER");
 
-                    String result = Grammar.ACTION(i, a);
+                    String result = SLR.ACTION(i, a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
                     else
@@ -374,11 +371,13 @@ public class Controller {
         SLR_Parse.setOnAction(event -> {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
-            if(Grammar.FollowLR == null)
-                Grammar.buildFollowLR();
-            if(Grammar.SLR_items == null)
-                Grammar.buildAllItems();
-            Grammar.SLR_Parser(Grammar.Lexer(CodeArea.getText()));
+            if(SLR == null)
+                SLR = new SLR_Automaton(Grammar);
+            if(SLR.FollowLR == null)
+                SLR.buildFollow();
+            if(SLR.items == null)
+                SLR.buildAllItems();
+            new Parser(GrammarType.SLR, Grammar).Parse(Grammar.Lexer(CodeArea.getText()), SLR);
         });
 
         ///============================= SLR =============================//
@@ -394,7 +393,8 @@ public class Controller {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
 
-            Grammar.LR_buildAllItems();
+            LR = new LR_Automaton(Grammar);
+            LR.buildAllItems();
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
@@ -417,16 +417,15 @@ public class Controller {
             }
 
 
-            for (int i = 0; i < Grammar.LR_items.size(); i++) {
+            for (int i = 0; i < LR.items.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
                 root.add(new Label(String.valueOf(i)), 0, i+1);
             }
 
-
             // GOTO
-            for (int i = 0; i < Grammar.LR_items.size(); i++) {
+            for (int i = 0; i < LR.items.size(); i++) {
                 for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
-                    int result = Grammar.LR_getIndexFromGoTo(Grammar.LR_items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+                    int result = LR.getIndexFromGOTO(LR.items.get(i), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
                     if( result == -1)
                         root.add(new Label(" "), j, i+1);
                     else
@@ -435,7 +434,7 @@ public class Controller {
             }
 
             // ACTION
-            for (int i = 0; i < Grammar.LR_items.size(); i++) {
+            for (int i = 0; i < LR.items.size(); i++) {
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
                     if(j != Grammar.Terminals.size())
@@ -443,7 +442,7 @@ public class Controller {
                     else
                         a = new Token("$", "END_MARKER");
 
-                    String result = Grammar.LR_ACTION(i, a);
+                    String result = LR.ACTION(i, a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
                     else
@@ -462,9 +461,11 @@ public class Controller {
         LR_Parse.setOnAction(event -> {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
-            if(Grammar.LR_items == null)
-                Grammar.LR_buildAllItems();
-            Grammar.LR_Parser(Grammar.Lexer(CodeArea.getText()));
+            if(LR == null)
+                LR = new LR_Automaton(Grammar);
+            if(LR.items == null)
+                LR.buildAllItems();
+            new Parser(GrammarType.LR, Grammar).Parse(Grammar.Lexer(CodeArea.getText()), LR);
         });
 
         ///============================= LR ==============================//
@@ -480,8 +481,11 @@ public class Controller {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
 
-            Grammar.LR_buildAllItems();
-            Grammar.LALR_ResizeItems();
+            LR = new LR_Automaton(Grammar);
+            LR.buildAllItems();
+
+            LALR = new LALR_Automaton(LR);
+            LALR.ResizeItems();
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
@@ -503,20 +507,18 @@ public class Controller {
                 root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
             }
 
-
             int ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : Grammar.LALR_items.entrySet()){
+            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
                 root.add(new Label(String.valueOf(pair.getKey())), 0, ind+1);
                 ind++;
             }
 
-
             // GOTO
             ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : Grammar.LALR_items.entrySet()){
+            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
-                    int result = Grammar.LALR_getIndexFromGoTo(pair.getValue(), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+                    int result = LALR.getIndexFromGOTO(pair.getValue(), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
                     if( result == -1)
                         root.add(new Label(" "), j, ind+1);
                     else
@@ -527,7 +529,7 @@ public class Controller {
 
             // ACTION
             ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : Grammar.LALR_items.entrySet()){
+            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
                     if(j != Grammar.Terminals.size())
@@ -535,7 +537,7 @@ public class Controller {
                     else
                         a = new Token("$", "END_MARKER");
 
-                    String result = Grammar.LALR_ACTION(pair.getKey(), a);
+                    String result = LALR.ACTION(pair.getKey(), a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, ind+1);
                     else
@@ -556,27 +558,19 @@ public class Controller {
         LALR_Parse.setOnAction(event -> {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
-            if(Grammar.LR_items == null)
-                Grammar.LR_buildAllItems();
-            Grammar.LALR_Parser(Grammar.Lexer(CodeArea.getText()));
+            if(LR == null) {
+                LR = new LR_Automaton(Grammar);
+                LR.buildAllItems();
+
+                LALR = new LALR_Automaton(LR);
+                LALR.ResizeItems();
+            }
+
+            new Parser(GrammarType.LALR, Grammar).Parse(Grammar.Lexer(CodeArea.getText()), LALR);
         });
 
 
         ///============================ LALR ==============================//
 
-        TEST.setOnAction(event -> {
-            try {
-                Grammar = new Grammar(this, "example11.txt");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Grammar.augmentGivenGrammar();
-            Grammar.printGrammar();
-            ItemLR i = new ItemLR(0, Grammar.Productions.get(0));
-            i.setTerminal(new Token("$"));
-            System.out.println(i);
-
-            System.out.println(Grammar.LR_CLOSURE(i));
-        });
     }
 }

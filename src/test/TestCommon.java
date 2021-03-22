@@ -1,4 +1,8 @@
+package test;
+
+import main.Grammar;
 import org.junit.Test;
+import stuff.Token;
 
 import java.io.IOException;
 import java.util.ArrayList;

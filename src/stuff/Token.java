@@ -1,15 +1,17 @@
+package stuff;
+
 import java.util.Objects;
 
 public class Token {
-    String data;
-    String type;
+    public String data;
+    public String type;
 
-    Token(String str, String Type){
+    public Token(String str, String Type){
         data = str.replace(" ", "");
         type = Type;
     }
 
-    Token(String str){
+    public Token(String str){
         data = str.replace(" ", "");
         switch (str) {
             case  (":"):
@@ -31,11 +33,9 @@ public class Token {
         }
     }
 
-    boolean isEpsilon(){
+    public boolean isEpsilon(){
         return type.equals("EPSILON");
     }
-
-
 
     @Override
     public String toString(){
