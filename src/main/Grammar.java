@@ -1,7 +1,7 @@
 package main;
 
-import stuff.*;
-import static stuff.SupportFunctions.*;
+import util.*;
+import static util.SupportFunctions.*;
 import java.io.*;
 import java.util.*;
 
@@ -16,7 +16,7 @@ public class Grammar {
 
     boolean isAugmented;
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
 
     }
 
@@ -74,9 +74,8 @@ public class Grammar {
             while (lineScanner.hasNextLine()) {
                 String line = lineScanner.nextLine();
                 // Убираем комментарии
-                if(line.contains("//"))
-                    line = (String) line.subSequence(0, line.indexOf("//"));
-                rawTokens.add(line);
+                if(!line.contains("//"))
+                    rawTokens.add(line);
             }
         }
         in.close();
@@ -84,9 +83,9 @@ public class Grammar {
         int countOfProduction = rawTokens.size();
         Productions = new ArrayList<>(countOfProduction);
         String temp;
-        for (int i = 0; i < countOfProduction; i++) {
-            temp = (String) rawTokens.get(i).subSequence(0, rawTokens.get(i).indexOf(":"));
-            Productions.add( new Production(new Token(temp, "NONTERMINAL")));
+        for (String rawToken : rawTokens) {
+            temp = (String) rawToken.subSequence(0, rawToken.indexOf(":"));
+            Productions.add(new Production(new Token(temp, "NONTERMINAL")));
         }
 
         ArrayList<Token> TempNonTerminals = new ArrayList<>();

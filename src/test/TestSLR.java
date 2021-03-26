@@ -2,12 +2,10 @@ package test;
 
 import automatons.SLR_Automaton;
 import main.Grammar;
-import main.GrammarType;
-import main.Parser;
-import stuff.Production;
+import util.Production;
 import org.junit.Test;
-import stuff.*;
-import static stuff.SupportFunctions.*;
+import util.*;
+import static util.SupportFunctions.*;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -1,11 +1,8 @@
-package stuff;
-
-import stuff.Production;
-import stuff.Token;
+package util;
 
 import java.util.ArrayList;
 
-import static stuff.SupportFunctions.createDOT;
+import static util.SupportFunctions.createDOT;
 
 public class ItemLR {
     // nonTerminal : definition , Terminal
@@ -25,6 +22,14 @@ public class ItemLR {
         definition = new ArrayList<>();
         definition.addAll(pro.definition);
         definition.add(indexOfDot, createDOT());
+    }
+
+    public ItemLR(int indexOfDot, Production pro, Token terminal){
+        nonTerminal = new Token(pro.nonTerminal.data, pro.nonTerminal.type);
+        definition = new ArrayList<>();
+        definition.addAll(pro.definition);
+        definition.add(indexOfDot, createDOT());
+        this.terminal = terminal;
     }
 
     public void setTerminal(Token t){

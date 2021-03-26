@@ -1,4 +1,4 @@
-package stuff;
+package util;
 
 import java.util.Objects;
 

@@ -1,8 +1,8 @@
 package automatons;
 
-import stuff.*;
+import util.*;
 import java.util.*;
-import static stuff.SupportFunctions.*;
+import static util.SupportFunctions.*;
 
 public class LALR_Automaton extends Automaton {
 

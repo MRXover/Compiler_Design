@@ -77,6 +77,7 @@
             </Menu>
             <Menu mnemonicParsing="false" text="LR">
                <items>
+                  <MenuItem fx:id="ShowItemsLR" mnemonicParsing="false" text="Show LR Items" />
                   <MenuItem fx:id="LR_MakeActionTable" mnemonicParsing="false" text="Make Action and GOTO table" />
                   <MenuItem fx:id="LR_Parse" mnemonicParsing="false" text="Parse" />
                </items>

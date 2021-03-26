@@ -1,7 +1,8 @@
 package main;
 
 import automatons.*;
-import stuff.*;
+import javafx.scene.layout.BorderPane;
+import util.*;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -10,15 +11,10 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import stuff.Token;
+import util.Token;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.Scanner;
+import java.io.*;
+import java.util.*;
 
 public class Controller {
 
@@ -60,6 +56,8 @@ public class Controller {
     private MenuItem SLR_Parse;
 
     @FXML
+    private MenuItem ShowItemsLR;
+    @FXML
     private MenuItem LR_MakeActionTable;
     @FXML
     private MenuItem LR_Parse;
@@ -68,7 +66,6 @@ public class Controller {
     private MenuItem LALR_MakeActionTable;
     @FXML
     private MenuItem LALR_Parse;
-
 
     LL_Automaton   LL;
     SLR_Automaton  SLR;
@@ -88,7 +85,7 @@ public class Controller {
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
             }
-            LogConsole.appendText("" + Grammar.isLeftRecursive() + "\n");
+            LogConsole.appendText("is Left Recursive: " + Grammar.isLeftRecursive() + "\n");
         });
 
         LoadFromFile.setOnAction(actionEvent -> {
@@ -128,8 +125,8 @@ public class Controller {
             Stage Stage = (Stage) source.getScene().getWindow();
 
             FileChooser fileChooser = new FileChooser();
-            FileChooser.ExtensionFilter txtfilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
-            fileChooser.getExtensionFilters().add(txtfilter);
+            FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
+            fileChooser.getExtensionFilters().add(txtFilter);
             fileChooser.setTitle("File saving");
             fileChooser.setInitialDirectory(new File("./"));
 
@@ -151,7 +148,6 @@ public class Controller {
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
             }
-
             if(!Grammar.isLeftRecursive()){
                 LogConsole.appendText("Grammar is not left recursive\n");
                 return;
@@ -194,7 +190,6 @@ public class Controller {
         LoadGrammar.setOnAction(event -> {
 
         });
-
 
         //============================== LL ==============================//
         MakeFirstAndFollow.setOnAction(actionEvent -> {
@@ -268,7 +263,6 @@ public class Controller {
             Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("Syntax matrix");
             newWindow.setScene(scene);
-
             newWindow.show();
 
         });
@@ -320,10 +314,9 @@ public class Controller {
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
                 root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             }
-            for (int i = leftNonTerminalsPos; i < rightNonTerminalsPos; i++) {
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPos +1).data)), i + 1, 0);
-            }
-
+            for (int i = leftNonTerminalsPos; i < rightNonTerminalsPos; i++)
+                root.add(new Label(String.valueOf(
+                        Grammar.NonTerminals.get(i - leftNonTerminalsPos +1).data)), i + 1, 0);
 
             for (int i = 0; i < SLR.items.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
@@ -351,7 +344,6 @@ public class Controller {
                         a = Grammar.Terminals.get(j - 1);
                     else
                         a = new Token("$", "END_MARKER");
-
                     String result = SLR.ACTION(i, a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
@@ -364,7 +356,6 @@ public class Controller {
             Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("ACTION and GOTO table");
             newWindow.setScene(scene);
-
             newWindow.show();
         });
 
@@ -412,10 +403,9 @@ public class Controller {
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
                 root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             }
-            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
-            }
-
+            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++)
+                root.add(new Label(String.valueOf(
+                        Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
 
             for (int i = 0; i < LR.items.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
@@ -441,7 +431,6 @@ public class Controller {
                         a = Grammar.Terminals.get(j - 1);
                     else
                         a = new Token("$", "END_MARKER");
-
                     String result = LR.ACTION(i, a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
@@ -454,7 +443,6 @@ public class Controller {
             Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("ACTION and GOTO table");
             newWindow.setScene(scene);
-
             newWindow.show();
         });
 
@@ -466,6 +454,37 @@ public class Controller {
             if(LR.items == null)
                 LR.buildAllItems();
             new Parser(GrammarType.LR, Grammar).Parse(Grammar.Lexer(CodeArea.getText()), LR);
+        });
+
+        ShowItemsLR.setOnAction(event -> {
+            if(!Grammar.isAugmented)
+                Grammar.augmentGivenGrammar();
+            if(LR == null)
+                LR = new LR_Automaton(Grammar);
+            if(LR.items == null)
+                LR.buildAllItems();
+
+            Stage newWindow = new Stage();
+            BorderPane border = new BorderPane();
+            TextArea root = new TextArea();
+
+            int i = 0;
+            for(ArrayList<ItemLR> list : LR.items){
+                root.appendText("\n");
+                root.appendText("I" + i + " =\n");
+                for(ItemLR item : list)
+                    root.appendText("    " + item + "\n");
+                i++;
+            }
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            border.setCenter(root);
+            Scene scene = new Scene(border, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("LR Items");
+            newWindow.setScene(scene);
+            newWindow.show();
         });
 
         ///============================= LR ==============================//
@@ -500,12 +519,11 @@ public class Controller {
             int leftNonTerminalsPosition  = Grammar.Terminals.size();
             int rightNonTerminalsPosition = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
 
-            for (int i = 0; i < Grammar.Terminals.size(); i++) {
+            for (int i = 0; i < Grammar.Terminals.size(); i++)
                 root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
-            }
-            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++) {
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
-            }
+            for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++)
+                root.add(new Label(String.valueOf(
+                        Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
 
             int ind = 0;
             for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
@@ -546,12 +564,10 @@ public class Controller {
                 ind++;
             }
 
-
             ScrollPane scrollPane = new ScrollPane(root);
             Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("ACTION and GOTO table");
             newWindow.setScene(scene);
-
             newWindow.show();
         });
 

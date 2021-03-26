@@ -1,9 +1,7 @@
-package stuff;
+package util;
 
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class SupportFunctions {
 
@@ -24,7 +22,7 @@ public class SupportFunctions {
         return newList;
     }
 
-    public static  <T> ArrayList<T> union(ArrayList<T> list1, ArrayList<T> list2) {
+    public static <T> ArrayList<T> union(ArrayList<T> list1, ArrayList<T> list2) {
         Set<T> set = new HashSet<T>();
         set.addAll(list1);
         set.addAll(list2);

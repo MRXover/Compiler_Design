@@ -3,7 +3,7 @@ package test;
 import automatons.LL_Automaton;
 import main.Grammar;
 import org.junit.Test;
-import stuff.Token;
+import util.Token;
 
 import java.io.IOException;
 import java.util.ArrayList;

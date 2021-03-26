@@ -1,14 +1,14 @@
 package automatons;
 
 import main.Grammar;
-import stuff.*;
+import util.*;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 
 import static java.lang.Math.abs;
-import static stuff.SupportFunctions.*;
+import static util.SupportFunctions.*;
 
 public class SLR_Automaton extends Automaton {
 

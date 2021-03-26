@@ -1,29 +1,18 @@
 package automatons;
 
 import main.Grammar;
-import stuff.ItemLR;
-import stuff.Production;
-import stuff.Token;
+import util.ItemLR;
+import util.Production;
+import util.Token;
 
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 
-import static stuff.SupportFunctions.createDOT;
-import static stuff.SupportFunctions.removeDuplicates;
+import static util.SupportFunctions.createDOT;
+import static util.SupportFunctions.removeDuplicates;
 
 public class LR_Automaton extends Automaton {
-
-
-    public static void main(String[] args) throws IOException {
-        LR_Automaton LR = new LR_Automaton(new Grammar("example11.txt"));
-        LR.g.printGrammar();
-        LR.g.augmentGivenGrammar();
-        LR.buildAllItems();
-
-        System.out.println("•".equals("•"));
-    }
 
 
     public Grammar g;
@@ -81,8 +70,6 @@ public class LR_Automaton extends Automaton {
         p1.setTerminal(new Token("$"));
         // I0
         items.add(CLOSURE(p1));
-        System.out.println(CLOSURE(p1));
-
         ArrayList<Token> tokensToCheck = new ArrayList<>();
 
         for(ItemLR item : items.get(0)){
@@ -125,16 +112,6 @@ public class LR_Automaton extends Automaton {
             left = oldIndex;
             oldIndex = index;
         } while( left != index );
-
-        int i = 0;
-        for(ArrayList<ItemLR> list : items){
-            System.out.println();
-            System.out.println("I" + i + " =");
-            for(ItemLR item : list)
-                System.out.println(item);
-            i++;
-        }
-
     }
 
     boolean LR_containsItem(ArrayList<ItemLR> items){
@@ -185,10 +162,12 @@ public class LR_Automaton extends Automaton {
 
                 temp.definition.set(indexOfDot, temp.definition.get(indexOfDot + 1));
                 temp.definition.set(indexOfDot + 1, createDOT());
+
+                J.add(temp);
                 J.addAll(CLOSURE(temp));
             }
         }
-        return J;
+        return removeDuplicates(J);
     }
 
     ArrayList<Token> LR_First(ArrayList<Token> input){
@@ -226,76 +205,68 @@ public class LR_Automaton extends Automaton {
         return result;
     }
 
+
+    public static void main(String[] args) throws IOException {
+        LR_Automaton LR = new LR_Automaton(new Grammar("example11.txt"));
+        LR.g.printGrammar();
+        LR.g.augmentGivenGrammar();
+
+        ItemLR item = new ItemLR(0, LR.g.Productions.get(0), new Token("$"));
+
+        ArrayList<ItemLR> I0 = LR.CLOSURE(item);
+        System.out.println();
+
+        ArrayList<ItemLR> I2 = LR.GOTO(I0, new Token("C", "NONTERMINAL"));
+        ArrayList<ItemLR> I5 = LR.GOTO(I2, new Token("c", "TERMINAL"));
+
+        for(ItemLR it : I5)
+            System.out.println(it);
+
+
+    }
+
     public ArrayList<ItemLR> CLOSURE(ItemLR I){
-        boolean debug = true;
-        HashMap<String, Boolean> added = new HashMap<>();
-        for (Token tok : g.NonTerminals)
-            added.put(tok.data, false);
-
-        ArrayList<ItemLR> set = new ArrayList<>();
-        //set.add(I);
-        ArrayDeque<Token> q = new ArrayDeque<>();
-        if(I.getIndexOfDot() + 1 == I.definition.size()){
-            //System.out.println("set = " + set);
-            set.add(I);
-            return set;
-        }
-        q.addFirst(I.get(I.getIndexOfDot() + 1));
-
-        /*
-        System.out.println("-------------------");
-        System.out.println(I);
-        System.out.println(I.getIndexOfDot() + 1);
-        System.out.println("-------------------");
-
-         */
-
-        int step = 1;
-        ArrayList<Token> rightTokens = new ArrayList<>();
-        rightTokens.add(I.terminal);
-        ArrayList<Token> first = new ArrayList<>();
-
+        boolean debug = false;
+        ArrayList<ItemLR> result = new ArrayList<>();
+        ArrayDeque<ItemLR> stack = new ArrayDeque<>();
+        if(I.nonTerminal.equals(g.startSymbol))
+            result.add(I);
+        stack.addFirst(I);
+        int i = 1;
         do {
-            if(debug){
+            ItemLR current = stack.pollFirst();
+            if(debug) {
                 System.out.println();
-                System.out.println("STEP " + step);
-                System.out.println(q);
-                System.out.println(added);
+                System.out.println("STEP " + i);
+                System.out.println("Current = " + current);
+                System.out.println("stack = " + stack);
             }
-
-            for(Production pro : g.Productions){
-                if(pro.nonTerminal.data.equals(q.peekFirst().data)){
-                    if(debug) System.out.println("pro = " + pro);
-
-                    for(Token tok : rightTokens){
-                        ItemLR temp = new ItemLR(0,pro);
-                        temp.setTerminal(tok);
-                        if(debug) System.out.println("Добавлено " + temp);
-                        if(debug) System.out.println(pro);
-                        //if(NonTerminals.contains(temp.definition.get(1)) && added.get(temp.definition.get(1).data))
-                        q.addLast(temp.definition.get(1));
-                        if(debug) System.out.println("q + " + temp.definition.get(1));
-                        set.add(temp);
-
-                        for(int i = temp.getIndexOfDot() + 2; i < temp.definition.size(); i++) {
-                            first.add(temp.definition.get(i));
-                            System.out.println("F = " + temp.definition.get(i));
+            if(current.getIndexOfDot() + 1 == current.size())
+                return result;
+            Token tokenAfterDot = current.get(current.getIndexOfDot() + 1);
+            if(debug) System.out.println("B = " + tokenAfterDot.data);
+            for (Production pro : g.Productions){
+                if(pro.nonTerminal.equals(tokenAfterDot)){
+                    if(debug) System.out.println("Pro = " + pro);
+                    ArrayList<Token> tokensForFIRST =
+                            new ArrayList<>(current.definition.subList(current.getIndexOfDot() + 2, current.size()));
+                    tokensForFIRST.add(current.terminal);
+                    for(Token tok : LR_First(tokensForFIRST)){
+                        ItemLR newItem = new ItemLR(0,pro, tok);
+                        if(!result.contains(newItem)){
+                            result.add(newItem);
+                            stack.addFirst(newItem);
+                            if(debug) System.out.println("Добавлено " + newItem);
                         }
                     }
 
                 }
             }
-            rightTokens.clear();
-            rightTokens.addAll(LR_First(first));
-            System.out.println("First = " + LR_First(first) + " " + first);
-
-            added.replace(q.peekFirst().data, true);
-            q.pollFirst();
-
-            step++;
-        } while (!q.isEmpty() );
-        return set;
+            i++;
+        } while ( !stack.isEmpty());
+        return result;
     }
+
 
 
 }

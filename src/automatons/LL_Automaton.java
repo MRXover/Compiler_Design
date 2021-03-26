@@ -1,10 +1,10 @@
 package automatons;
 
 import main.*;
-import stuff.*;
+import util.*;
 import java.util.*;
 
-import static stuff.SupportFunctions.*;
+import static util.SupportFunctions.*;
 
 public class LL_Automaton extends Automaton {
 

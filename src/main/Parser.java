@@ -7,13 +7,11 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
-import stuff.Production;
-import stuff.Token;
+import util.Production;
+import util.Token;
 
 import java.util.ArrayList;
 import java.util.Stack;
-
-import static main.GrammarType.*;
 
 public class Parser {
     private final GrammarType type;
@@ -81,8 +79,6 @@ public class Parser {
         ArrayList<Token> symbols = new ArrayList<>();
         symbols.add(new Token("$", "END_MARKER"));
 
-        System.out.println(Input);
-
         Stack<Integer> stack = new Stack<>();
         stack.push(0);
 
@@ -120,6 +116,7 @@ public class Parser {
                     break;
             }
 
+            System.out.println("ACTION( " + s + ", " + a.data + ") = " + action);
             if ( action.charAt(0) == 's'){
                 symbols.add(input.get(pointer));
                 stack.push(Integer.valueOf(action.substring(1)));
