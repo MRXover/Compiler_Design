@@ -90,7 +90,7 @@ public class LR_Automaton extends Automaton {
 
         tokensToCheck.clear();
 
-        do{
+        do {
             for (int i = left; i < oldIndex + 1; i++) {
                 for (ItemLR item : items.get(i)) {
                     int ind = item.getIndexOfDot();
@@ -185,7 +185,8 @@ public class LR_Automaton extends Automaton {
                     result.add(input.get(i));
                     return result;
                 } else {
-                    ArrayList<Token> tokensFromNonterminal = new LL_Automaton(g,null).LL_First(input.get(i));
+                    //ArrayList<Token> tokensFromNonterminal = new LL_Automaton(g,null).LL_First(input.get(i),null);
+                    ArrayList<Token> tokensFromNonterminal = new LL_Automaton(g,null).First(input.get(i),null);
                     if(tokensFromNonterminal.contains(new Token("#"))){
                         result.addAll(tokensFromNonterminal);
                         result.remove(new Token("#"));

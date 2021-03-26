@@ -299,4 +299,21 @@ public class TestLL {
         assert(arr.contains(new Token("b", "TERMINAL")));
     }
 
+    @Test
+    public void TestGrammar6First() throws IOException {
+        grammar = new Grammar("example12.txt");
+        LL = new LL_Automaton(grammar, null);
+        LL.makeFirstSet();
+
+        // FIRST(S) = {a, b}
+        arr = LL.first.get(grammar.NonTerminals.get(0));
+        assert(arr.contains(new Token("a", "TERMINAL")));
+        assert(arr.contains(new Token("b", "TERMINAL")));
+        // FIRST(A) = {b, a}
+        arr = LL.first.get(grammar.NonTerminals.get(1));
+        assert(arr.contains(new Token("a", "TERMINAL")));
+        assert(arr.contains(new Token("b", "TERMINAL")));
+
+    }
+
 }

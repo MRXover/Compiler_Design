@@ -2,6 +2,8 @@ package automatons;
 
 import main.*;
 import util.*;
+
+import java.io.IOException;
 import java.util.*;
 
 import static util.SupportFunctions.*;
@@ -25,7 +27,7 @@ public class LL_Automaton extends Automaton {
         FirstSet = new ArrayList<>(g.NonTerminals.size());
         first = new HashMap<>(g.NonTerminals.size());
         for (Token nonTerminal : g.NonTerminals) {
-            ArrayList<Token> e = removeDuplicates(LL_First(nonTerminal));
+            ArrayList<Token> e = removeDuplicates(First(nonTerminal,null));
             e.remove(null);
             FirstSet.add(e);
             first.put(nonTerminal, e);
@@ -38,13 +40,13 @@ public class LL_Automaton extends Automaton {
         for (Token nonTerminal : g.NonTerminals) {
             ArrayList<Token> e;
             try {
-                e = Follow(nonTerminal);
+                e = Follow(nonTerminal, null);
             } catch (StackOverflowError stackOverflowError){
                 // Для неоднозначной грамматики
                 // Это ужасная вещь, но она нужна для редкого случая, когда два нетерминала взаимосвязаны через Follow
                 // Follow(S) = ... + Follow(A)
                 // Follow(A) = Follow(S)
-                e = LL_First(nonTerminal);
+                e = First(nonTerminal, null);
                 e.add(new Token("$","END_MARKER"));
                 e.remove(new Token("#","EPSILON"));
             }
@@ -85,85 +87,144 @@ public class LL_Automaton extends Automaton {
             controller.LogConsole.appendText("\n");
     }
 
-    public ArrayList<Token> LL_First(Token X){
-        ArrayList<Token> temp = new ArrayList<>();
-        temp.add(X);
-        return LL_First(temp);
+    ArrayList<Token> First(Token X, Token prev){
+        //System.out.println(); System.out.println("Внешний First( " + X.data + " )");
+        ArrayList<Token> result = new ArrayList<>();
+        for(Production pro : g.Productions)
+            if(pro.nonTerminal.equals(X)){
+                //System.out.println("pro = " + pro);
+                result.addAll(First(X, pro.definition, prev, true));
+            }
+        return result;
     }
 
-    ArrayList<Token> LL_First(ArrayList<Token> X){
+
+    private ArrayList<Token> First(Token current, ArrayList<Token> X, Token prev, boolean deleteNextEps){
         ArrayList<Token> result = new ArrayList<>();
-        if(X.get(0).isEpsilon()){
+        //System.out.println("Внутренний First( " + X + " )");
+        //System.out.println("получил prev = " + prev);
+        if(X.isEmpty())
+            return result;
+        if(X.get(0).type.equals("TERMINAL")){
             result.add(X.get(0));
             return result;
         }
-        if(g.Terminals.contains(X.get(0))){
+        if(X.get(0).type.equals("EPSILON")){
             result.add(X.get(0));
             return result;
         }
+        // X : Y1 Y2 Y3
+        if (prev != null && prev.equals(X.get(0)))
+            return result;
+        //System.out.println("prev = " + X.get(0));
+        ArrayList<Token> FirstY1 = First(X.get(0), current);
+        if (FirstY1.contains(new Token("#"))){
+            result.addAll(FirstY1);
+            if(deleteNextEps)
+                result.remove(new Token("#"));
+            ArrayList<Token> subList = new ArrayList<>(X);
+            subList.remove(0);
+            result.addAll(First(current, subList, prev, false));
+        } else
+            result.addAll(FirstY1);
+        return result;
+    }
+
+
+
+
+/*
+    ArrayList<Token> Follow(Token X, Token prev){
+        System.out.println();
+        System.out.println("Внешний FOLLOW( " + X.data + " )");
+        ArrayList<Token> result = new ArrayList<>();
+        if(X.equals(g.startSymbol))
+            result.add(new Token("$"));
         for(Production pro : g.Productions){
-            if(pro.nonTerminal.data.equals(X.get(0).data)){
-                boolean allProductionsHasEps = true;
-                for(int i = 0; i < pro.size(); i++){
-                    Token Yi = pro.get(i);
-                    if(Yi.type.equals("TERMINAL")){
-                        result.add(Yi);
-                        allProductionsHasEps = false;
-                        break;
-                    }
-                    ArrayList<Token> FirstYi = LL_First(Yi);
-                    allProductionsHasEps = FirstYi.contains(new Token("#"));
+            // Rule-2
+            System.out.println("prod = " + pro);
+            if(pro.nonTerminal.equals(X) && ){
+                result.addAll(Follow(pro.get(pro.size() - 1), X));
+            }
 
-                    if(Yi.type.equals("NONTERMINAL"))
-                        for(Token t : LL_First(Yi))
-                            if(t != null && !t.type.equals("EPSILON"))
-                                result.add(t);
+            // Rule-3
+            if(pro.definition.contains(X)){
+                System.out.println("pro = " + pro);
+                ArrayList<Token> subList = new ArrayList<>();
+                for(int i = pro.getTokenIndex(X) + 1; i < pro.size(); i++)
+                    subList.add(pro.get(i));
 
-                    if (!Yi.type.equals("NONTERMINAL") || !FirstYi.contains(new Token("#")))
-                        break;
-                }
-                if(allProductionsHasEps )
-                    result.add(new Token("#", "EPSILON"));
+                result.addAll(Follow(X, subList, prev));
             }
         }
         return result;
     }
 
-    private ArrayList<Token> LL_First(Production pro){
-        Token token = pro.nonTerminal;
+
+    private ArrayList<Token> Follow(Token current, ArrayList<Token> X, Token prev){
+        ArrayList<Token> result = new ArrayList<>();
+        System.out.println("Внутренний FOLLOW( " + X + " )");
+        System.out.println("получил prev = " + prev);
+        if(X.isEmpty())
+            return result;
+
+
+
+        return result;
+    }
+
+ */
+
+    public static void main(String[] args) throws IOException {
+        LL_Automaton LL = new LL_Automaton(new Grammar("example3.txt"),null);
+        System.out.println(LL.Follow(new Token("Y", "NONTERMINAL"), null));
+    }
+
+    ArrayList<Token> Follow(Token X, Token prev){
         ArrayList<Token> result = new ArrayList<>();
 
-        if(token.type.equals("TERMINAL"))
-            result.add(token);
-        else if(token.type.equals("EPSILON"))
-            result.add(token);
-        else {
-            boolean allProductionsHasEps = true;
-            for(int i = 0; i < pro.size(); i++){
-                Token Yi = pro.get(i);
-                if(Yi.type.equals("TERMINAL")){
-                    result.add(Yi);
-                    allProductionsHasEps = false;
-                    break;
+        System.out.println("X = " + X);
+        // if(step == 5) return result;
+        if(prev != null && prev.equals(X))
+            return result;
+
+
+        // Rule-1
+        if (X.equals(g.startSymbol))
+            result.add(new Token("$", "END_MARKER"));
+
+        for (Production pro : g.Productions) {
+            if(pro.definition.contains(X)){
+                System.out.println("pro = " + pro);
+                // Rule-2
+                if(pro.getTokenIndex(X) + 1 == pro.size()){
+                    result.addAll(Follow(pro.nonTerminal, X));
+                    continue;
                 }
-                ArrayList<Token> FirstYi = LL_First(Yi);
-                if(!FirstYi.contains(new Token("#")))
-                    allProductionsHasEps = false;
 
-                if(Yi.type.equals("NONTERMINAL"))
-                    for(Token t : LL_First(Yi))
-                        if(t != null && !t.type.equals("EPSILON"))
-                            result.add(t);
+                ArrayList<Token> subList = new ArrayList<>();
+                for(int i = pro.getTokenIndex(X) + 1; i < pro.size(); i++)
+                    subList.add(pro.get(i));
+                ArrayList<Token> FirstB = First(X, subList, null, true);
+                if(!FirstB.contains(new Token("#"))){
+                    System.out.println("Rule-3.1");
+                    result.addAll(FirstB);
+                } else {
+                    System.out.println("Rule-3.2");
+                    result.addAll(FirstB);
+                    result.remove(new Token("#"));
+                    result.addAll(Follow(pro.nonTerminal, X));
+                }
 
-                if (!Yi.type.equals("NONTERMINAL") || !FirstYi.contains(new Token("#")))
-                    break;
             }
-            if(allProductionsHasEps )
-                result.add(new Token("#", "EPSILON"));
+
+
         }
         return result;
     }
 
+
+/*
     ArrayList<Token> Follow(Token token){
         ArrayList<Token> result = new ArrayList<>();
         if (token.equals(g.startSymbol))
@@ -203,6 +264,8 @@ public class LL_Automaton extends Automaton {
         return result;
     }
 
+ */
+
     public boolean TokenHasEpsProd(Token tok){
         boolean result = false;
         for(Production pro : g.Productions){
@@ -223,7 +286,7 @@ public class LL_Automaton extends Automaton {
             SyntaxMatrix.put(nt.data, new HashMap<>());
 
         for(Production pro : g.Productions){
-            for(Token tok : LL_First(pro)){
+            for(Token tok : First(pro.nonTerminal, pro.definition, null, true)){
                 if(!tok.type.equals("EPSILON"))
                     SyntaxMatrix.get(pro.nonTerminal.data).put(tok.data, pro);
                 else{
