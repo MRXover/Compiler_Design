@@ -176,13 +176,13 @@ public class LL_Automaton extends Automaton {
  */
 
     public static void main(String[] args) throws IOException {
-        LL_Automaton LL = new LL_Automaton(new Grammar("example3.txt"),null);
-        System.out.println(LL.Follow(new Token("Y", "NONTERMINAL"), null));
+        LL_Automaton LL = new LL_Automaton(new Grammar("example12.txt"),null);
+        System.out.println(LL.Follow(new Token("A", "NONTERMINAL"), null));
     }
 
     ArrayList<Token> Follow(Token X, Token prev){
         ArrayList<Token> result = new ArrayList<>();
-
+        int step = 0;
         System.out.println("X = " + X);
         // if(step == 5) return result;
         if(prev != null && prev.equals(X))
@@ -193,34 +193,61 @@ public class LL_Automaton extends Automaton {
         if (X.equals(g.startSymbol))
             result.add(new Token("$", "END_MARKER"));
 
-        for (Production pro : g.Productions) {
+
+
+        for (int j = 0; j < g.Productions.size(); j++) {
+            Production pro = g.Productions.get(j);
             if(pro.definition.contains(X)){
                 System.out.println("pro = " + pro);
+                boolean productionIsNotOver = true;
                 // Rule-2
                 if(pro.getTokenIndex(X) + 1 == pro.size()){
                     result.addAll(Follow(pro.nonTerminal, X));
                     continue;
                 }
 
-                ArrayList<Token> subList = new ArrayList<>();
-                for(int i = pro.getTokenIndex(X) + 1; i < pro.size(); i++)
-                    subList.add(pro.get(i));
-                ArrayList<Token> FirstB = First(X, subList, null, true);
-                if(!FirstB.contains(new Token("#"))){
-                    System.out.println("Rule-3.1");
-                    result.addAll(FirstB);
-                } else {
-                    System.out.println("Rule-3.2");
-                    result.addAll(FirstB);
-                    result.remove(new Token("#"));
-                    result.addAll(Follow(pro.nonTerminal, X));
-                }
+                int pointer = pro.getTokenIndex(X);
+                do {
+
+                    ArrayList<Token> subList = new ArrayList<>();
+                    for (int i = pointer + 1; i < pro.size(); i++)
+                        subList.add(pro.get(i));
+
+                    ArrayList<Token> FirstB = First(X, subList, null, false);
+                    System.out.println("subList = " + subList);
+                    System.out.println("FIRST_B = " + FirstB);
+                    if (!FirstB.contains(new Token("#"))) {
+                        System.out.println("Rule-3.1");
+                        result.addAll(FirstB);
+                    } else {
+                        System.out.println("Rule-3.2");
+                        result.addAll(FirstB);
+                        result.remove(new Token("#"));
+                        result.addAll(Follow(pro.nonTerminal, X));
+                        break;
+                    }
+                    if(!subList.contains(X)) {
+                        productionIsNotOver = false;
+                        System.out.println("! contains");
+                    } else {
+
+                        pointer = pointer + subList.indexOf(X) + 1;
+                        System.out.println("Pointer = " + pointer);
+                        System.out.println("SubList = " + subList);
+
+                    }
+                    step++;
+                    if(step > 3)
+                        break;
+                    System.out.println();
+                } while (productionIsNotOver);
+                System.out.println("while");
 
             }
 
 
         }
-        return result;
+        return removeDuplicates(result);
     }
 
 
