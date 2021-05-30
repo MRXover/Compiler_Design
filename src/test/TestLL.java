@@ -137,7 +137,7 @@ public class TestLL {
         // FIRST(E) = {(, ID}
         arr = LL.first.get(grammar.NonTerminals.get(0));
         assert(arr.contains(new Token("(", "TERMINAL")));
-        assert(arr.contains(new Token("ID", "TERMINAL")));
+        assert(arr.contains(new Token("id", "TERMINAL")));
         assert(arr.size() == 2);
         // FIRST(R) = {+, #}
         arr = LL.first.get(grammar.NonTerminals.get(1));
@@ -147,7 +147,7 @@ public class TestLL {
         // FIRST(T) = {(, ID}
         arr = LL.first.get(grammar.NonTerminals.get(2));
         assert(arr.contains(new Token("(", "TERMINAL")));
-        assert(arr.contains(new Token("ID", "TERMINAL")));
+        assert(arr.contains(new Token("id", "TERMINAL")));
         assert(arr.size() == 2);
         // FIRST(Y) = {*, #}
         arr = LL.first.get(grammar.NonTerminals.get(3));
@@ -157,7 +157,7 @@ public class TestLL {
         // FIRST(F) = {(, ID}
         arr = LL.first.get(grammar.NonTerminals.get(4));
         assert(arr.contains(new Token("(", "TERMINAL")));
-        assert(arr.contains(new Token("ID", "TERMINAL")));
+        assert(arr.contains(new Token("id", "TERMINAL")));
         assert(arr.size() == 2);
     }
 

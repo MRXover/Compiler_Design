@@ -245,11 +245,11 @@ public class Controller {
 
             for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.NonTerminals[i])), HPos.LEFT);
-                root.add(new Label(String.valueOf(Grammar.NonTerminals.get(i).data)), 0, i + 1);
+                root.add(new Label(" " + String.valueOf(Grammar.NonTerminals.get(i).data) + " "), 0, i + 1);
             }
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i + 1, 0);
+                root.add(new Label(" " + String.valueOf(Grammar.Terminals.get(i).data) + " "), i + 1, 0);
             }
 
             for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
@@ -258,17 +258,19 @@ public class Controller {
                         GridPane.setHalignment(new Label(""), HPos.LEFT);
                         root.add(new Label(""), j + 1, i + 1);
                     } else {
-                        GridPane.setHalignment(new Label(LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), HPos.LEFT);
-                        root.add(new Label(LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data).toString()), j + 1, i + 1);
+                        GridPane.setHalignment(new Label(" " + LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data)
+                                .get(Grammar.Terminals.get(j).data).toString() + " "), HPos.LEFT);
+                        root.add(new Label(" " + LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data)
+                                .get(Grammar.Terminals.get(j).data).toString() + " "), j + 1, i + 1);
                     }
                 }
             }
 
-            Scene scene = new Scene(root, root.getMaxWidth(), root.getMaxHeight());
+            ScrollPane scrollPane = new ScrollPane(root);
+            Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("Syntax matrix");
             newWindow.setScene(scene);
             newWindow.show();
-
         });
 
         LL_Parse.setOnAction(actionEvent -> {

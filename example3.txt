@@ -2,4 +2,4 @@ E : T R
 R : + T R | #
 T : F Y
 Y : * F Y | #
-F : ( E ) | ID
+F : ( E ) | id

@@ -29,6 +29,10 @@ public class Production {
         definition = new ArrayList<>(item.definition);
     }
 
+    public static Production synch(){
+        return new Production(new Token("synch", "synch"));
+    }
+
     public Production add(Token token){
         definition.add(token);
         return this;

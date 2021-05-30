@@ -38,20 +38,7 @@ public class LL_Automaton extends Automaton {
         FollowSet = new ArrayList<>(g.NonTerminals.size());
         follow = new HashMap<>(g.NonTerminals.size());
         for (Token nonTerminal : g.NonTerminals) {
-            ArrayList<Token> e;
-            //try {
-                e = Follow(nonTerminal, null);
-            /*} catch (StackOverflowError stackOverflowError){
-                // Для неоднозначной грамматики
-                // Это ужасная вещь, но она нужна для редкого случая, когда два нетерминала взаимосвязаны через Follow
-                // Follow(S) = ... + Follow(A)
-                // Follow(A) = Follow(S)
-                System.out.println("111");
-                e = First(nonTerminal, null);
-                e.add(new Token("$","END_MARKER"));
-                e.remove(new Token("#","EPSILON"));
-            }*/
-            ArrayList<Token> ee = removeDuplicates(e);
+            ArrayList<Token> ee = removeDuplicates(Follow(nonTerminal, null));
             ee.remove(null);
             FollowSet.add(ee);
             follow.put(nonTerminal, ee);
@@ -317,6 +304,18 @@ public class LL_Automaton extends Automaton {
                 }
             }
         }
+
+        // synch
+        for (Token nonTerm : g.NonTerminals){
+            for(Token t : follow.get(nonTerm)){
+                if(SyntaxMatrix.get(nonTerm.data).get(t.data) == null){
+                    //System.out.println("[" + nonTerm.data + ", " + t.data + "] = " + SyntaxMatrix.get(nonTerm.data).get(t.data) );
+                    SyntaxMatrix.get(nonTerm.data).put(t.data, Production.synch());
+                }
+            }
+        }
+
+
     }
 
     public Controller getController(){
