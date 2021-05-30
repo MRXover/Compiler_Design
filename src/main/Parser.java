@@ -28,37 +28,97 @@ public class Parser {
         stack.push(new Token("$"));
         stack.push(g.startSymbol);
 
+        Stage newWindow = new Stage();
+        GridPane root = new GridPane();
+
+        newWindow.setX(200);
+        newWindow.setY(100);
+
+        root.setPadding(new Insets(20));
+        root.setHgap(25);
+        root.setVgap(15);
+
+        root.add(new Label("Строка"), 0, 0);
+        root.add(new Label("Стек"), 1, 0);
+        root.add(new Label("Вход"), 2, 0);
+        root.add(new Label("Действие"), 3, 0);
+
+        int stringIndex = 1;
         if (Input.size() == 0){
-            automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
+            automaton.getController().LogConsole.appendText("111LL PARSING: FAIL\n");
             return;
         }
 
         while(true){
+            root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
+            String st = "";
+            for (Token t : stack)
+                st += t.data + " ";
+            root.add(new Label(st), 1, stringIndex);
+
+            String symbols = "";
+            for(Token t : Input.subList(codePointer, Input.size()))
+                symbols += t.data;
+            root.add(new Label(symbols + "$"), 2, stringIndex);
+
             if(stack.peek().equals(new Token("$")) && codePointer == Input.size()){
                 automaton.getController().LogConsole.appendText("LL PARSING: SUCCESS\n");
-                return;
-            } else if(stack.peek().equals(new Token("#"))){
-                stack.pop();
+                root.add(new Label("SUCCESS"), 3, stringIndex);
+                break;
+
             } else if(codePointer < Input.size() && Input.get(codePointer).equals(stack.peek())){
+                root.add(new Label("Соответствие " + stack.peek().data), 3, stringIndex);
                 codePointer++;
+                stack.pop();
+            } else if(stack.peek().equals(new Token("#"))){
+                root.add(new Label("Пропуск пустого символа"), 3, stringIndex);
                 stack.pop();
             } else {
                 if(codePointer == Input.size()){
+                    root.add(new Label("Вывод " + stack.peek().data + " : #"), 3, stringIndex);
                     if(automaton.TokenHasEpsProd(stack.peek()))
                         stack.pop();
+                    else{
+                        automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
+                        root.add(new Label("ERROR"), 3, stringIndex + 1);
+                        break;
+                    }
+                    stringIndex++;
                     continue;
                 }
                 Production p = automaton.SyntaxMatrix.get(stack.peek().data).get(Input.get(codePointer).data);
                 if(p == null){
                     automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
-                    return;
+                    root.add(new Label("ERROR"), 3, stringIndex);
+                    break;
                 }
-                ArrayList<Token> temp = p.definition;
-                stack.pop();
-                for (int i = temp.size() - 1; i > -1; i--)
-                    stack.push(temp.get(i));
+                if(p.nonTerminal.type.equals("synch")){
+                    if(stack.size() == 2){
+                        root.add(new Label("Ошибка, пропускаем " + Input.get(codePointer).data +
+                                "\n" + Input.get(codePointer + 1).data + " ∈ First (" + stack.peek().data + ")"),3,stringIndex);
+                        codePointer++;
+                    } else {
+                        root.add(new Label("Ошибка, M[" + stack.peek().data + ", " + Input.get(codePointer).data + "] = synch\n" +
+                                stack.peek().data + " снимается со стека"),3,stringIndex);
+                        stack.pop();
+                    }
+                } else {
+                    ArrayList<Token> temp = p.definition;
+                    stack.pop();
+                    for (int i = temp.size() - 1; i > -1; i--)
+                        stack.push(temp.get(i));
+                    root.add(new Label("Вывод " + p), 3, stringIndex);
+                }
+
             }
+            stringIndex++;
         }
+
+        ScrollPane scrollPane = new ScrollPane(root);
+        Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
+        newWindow.setTitle("LL Parsing table");
+        newWindow.setScene(scene);
+        newWindow.show();
     }
 
     public void Parse(ArrayList<Token> Input, Automaton automaton) {
@@ -166,7 +226,6 @@ public class Parser {
         }
 
         ScrollPane scrollPane = new ScrollPane(root);
-
         Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
         newWindow.setTitle("LR Parse table");
         newWindow.setScene(scene);

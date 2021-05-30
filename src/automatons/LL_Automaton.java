@@ -305,16 +305,16 @@ public class LL_Automaton extends Automaton {
             }
         }
 
-        // synch
-        for (Token nonTerm : g.NonTerminals){
-            for(Token t : follow.get(nonTerm)){
-                if(SyntaxMatrix.get(nonTerm.data).get(t.data) == null){
-                    //System.out.println("[" + nonTerm.data + ", " + t.data + "] = " + SyntaxMatrix.get(nonTerm.data).get(t.data) );
-                    SyntaxMatrix.get(nonTerm.data).put(t.data, Production.synch());
+        if (controller.synchLL.isSelected()) {
+            for (Token nonTerm : g.NonTerminals) {
+                for (Token t : follow.get(nonTerm)) {
+                    if (SyntaxMatrix.get(nonTerm.data).get(t.data) == null) {
+                        //System.out.println("[" + nonTerm.data + ", " + t.data + "] = " + SyntaxMatrix.get(nonTerm.data).get(t.data) );
+                        SyntaxMatrix.get(nonTerm.data).put(t.data, Production.synch());
+                    }
                 }
             }
         }
-
 
     }
 

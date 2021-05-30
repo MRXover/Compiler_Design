@@ -54,6 +54,8 @@ public class Controller {
     private MenuItem MakeActionTable;
     @FXML
     private MenuItem SLR_Parse;
+    @FXML
+    public CheckMenuItem synchLL;
 
     @FXML
     private MenuItem ShowItemsLR;
