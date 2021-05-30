@@ -28,9 +28,14 @@ public class Parser {
         stack.push(new Token("$"));
         stack.push(g.startSymbol);
 
+        if (Input.size() == 0){
+            automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
+            return;
+        }
+
         while(true){
             if(stack.peek().equals(new Token("$")) && codePointer == Input.size()){
-                automaton.getController().LogConsole.appendText("Success\n");
+                automaton.getController().LogConsole.appendText("LL PARSING: SUCCESS\n");
                 return;
             } else if(stack.peek().equals(new Token("#"))){
                 stack.pop();
@@ -45,7 +50,7 @@ public class Parser {
                 }
                 Production p = automaton.SyntaxMatrix.get(stack.peek().data).get(Input.get(codePointer).data);
                 if(p == null){
-                    automaton.getController().LogConsole.appendText("FAIL\n");
+                    automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
                     return;
                 }
                 ArrayList<Token> temp = p.definition;
@@ -112,7 +117,7 @@ public class Parser {
                     action = ((LR_Automaton)automaton).ACTION(s, a);
                     break;
                 case LALR:
-                    action = ((LALR_Automaton)automaton).ACTION(s, a);
+                    action = ((LALR_Automaton)automaton).ACTION("" + s, a);
                     break;
             }
 
@@ -139,20 +144,14 @@ public class Parser {
                 }
                 symbols.add(g.Productions.get(prodNumber).nonTerminal);
 
-                switch(type){
-                    case SLR:
-                        stack.push( ((SLR_Automaton)automaton).getIndexFromGOTO(((SLR_Automaton)automaton).items.get(stack.peek()),
-                                g.Productions.get(prodNumber).nonTerminal));
-                        break;
-                    case LR:
-                        stack.push( ((LR_Automaton)automaton).getIndexFromGOTO(((LR_Automaton)automaton).items.get(stack.peek()),
-                                g.Productions.get(prodNumber).nonTerminal));
-                        break;
-                    case LALR:
-                        stack.push( ((LALR_Automaton)automaton).getIndexFromGOTO( ((LALR_Automaton)automaton).items.get(stack.peek()),
-                                g.Productions.get(prodNumber).nonTerminal));
-                        break;
-                }
+                if(type == GrammarType.SLR)
+                    stack.push( ((SLR_Automaton)automaton).getIndexFromGOTO(((SLR_Automaton)automaton).items.get(stack.peek()),
+                            g.Productions.get(prodNumber).nonTerminal));
+
+                else
+                    stack.push( ((LR_Automaton)automaton).getIndexFromGOTO(((LR_Automaton)automaton).items.get(stack.peek()),
+                            g.Productions.get(prodNumber).nonTerminal));
+
 
             } else if(action.charAt(0) == 'a'){
                 System.out.println("SUCCESS");
@@ -171,9 +170,105 @@ public class Parser {
         Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
         newWindow.setTitle("LR Parse table");
         newWindow.setScene(scene);
-
         newWindow.show();
     }
+
+    public void Parse(ArrayList<Token> Input, LALR_Automaton automaton) {
+        Stage newWindow = new Stage();
+        GridPane root = new GridPane();
+
+        newWindow.setX(200);
+        newWindow.setY(100);
+
+        root.setPadding(new Insets(20));
+        root.setHgap(25);
+        root.setVgap(15);
+
+        root.add(new Label("Строка"), 0, 0);
+        root.add(new Label("Стек"), 1, 0);
+        root.add(new Label("Символы"), 2, 0);
+        root.add(new Label("Вход"), 3, 0);
+        root.add(new Label("Действие"), 4, 0);
+
+        ArrayList<Token> input = new ArrayList<>(Input);
+        input.add(new Token("$", "END_MARKER"));
+
+        ArrayList<Token> symbols = new ArrayList<>();
+        symbols.add(new Token("$", "END_MARKER"));
+
+        Stack<String> stack = new Stack<>();
+        stack.push("0");
+
+        Token a = input.get(0);
+        int pointer = 0;
+        int stringIndex = 1;
+
+        while (true) {
+            String s = stack.peek();
+
+            root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
+            root.add(new Label(String.valueOf(stack)), 1, stringIndex);
+
+            String symbolsString = "";
+            for(Token t : symbols)
+                symbolsString += t.data;
+
+            root.add(new Label(symbolsString), 2, stringIndex);
+
+            String inputString = "";
+            for(Token t : input.subList(pointer, input.size()))
+                inputString += t.data;
+            root.add(new Label(inputString), 3, stringIndex);
+
+            String action = automaton.ACTION(s, a);
+
+
+            System.out.println("ACTION( " + s + ", " + a.data + ") = " + action);
+            if ( action.charAt(0) == 's'){
+                symbols.add(input.get(pointer));
+                stack.push(action.substring(1));
+                pointer++;
+                a = input.get(pointer);
+                System.out.println("Перенос в " + action.substring(1));
+                root.add(new Label("Перенос в " + action.substring(1)), 4, stringIndex);
+            } else if (action.charAt(0) == 'r'){
+                int prodNumber = Integer.parseInt(action.substring(1, action.length()));
+                String shift = "Свертка по " + g.Productions.get(prodNumber).nonTerminal.data + " -> ";
+                for (Token t : g.Productions.get(prodNumber).definition){
+                    shift += t.data;
+                    //if(!stack.isEmpty())
+                    stack.pop();
+                }
+                System.out.println(shift);
+                root.add(new Label(shift), 4, stringIndex);
+                int count = g.Productions.get(prodNumber).definition.size();
+                for (int j = 0; j < count; j++){
+                    symbols.remove(symbols.size() - 1);
+                }
+                symbols.add(g.Productions.get(prodNumber).nonTerminal);
+                stack.push( automaton.getIndexFromGOTO( automaton.items.get(stack.peek()),
+                                g.Productions.get(prodNumber).nonTerminal));
+
+            } else if(action.charAt(0) == 'a'){
+                System.out.println("SUCCESS");
+                root.add(new Label("SUCCESS"), 4, stringIndex);
+                break;
+            } else if(action.charAt(0) == 'e'){
+                System.out.println("ERROR");
+                root.add(new Label("ERROR"), 4, stringIndex);
+                break;
+            }
+            stringIndex++;
+        }
+
+        ScrollPane scrollPane = new ScrollPane(root);
+
+        Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
+        newWindow.setTitle("LALR Parse table");
+        newWindow.setScene(scene);
+        newWindow.show();
+    }
+
 
 
 }

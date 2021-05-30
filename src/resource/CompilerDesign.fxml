@@ -88,6 +88,11 @@
                   <MenuItem fx:id="LALR_Parse" mnemonicParsing="false" text="Parse" />
                </items>
             </Menu>
+            <Menu fx:id="Options" mnemonicParsing="false" text="Options">
+               <items>
+                  <MenuItem fx:id="isAugmented" mnemonicParsing="false" text="Grammar is already augmented" />
+               </items>
+            </Menu>
         </menus>
       </MenuBar>
    </children>

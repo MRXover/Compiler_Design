@@ -1,9 +1,9 @@
 <component name="ArtifactManager">
-  <artifact type="javafx" name="Compliler Design">
-    <output-path>$PROJECT_DIR$/out/artifacts/Compliler_Design</output-path>
+  <artifact type="javafx" name="Compiler Design">
+    <output-path>$PROJECT_DIR$/out/artifacts/Compiler_Design</output-path>
     <properties id="javafx-properties">
       <options>
-        <option name="appClass" value="Main" />
+        <option name="appClass" value="main.Main" />
         <option name="description" value="" />
         <option name="htmlPlaceholderId" value="" />
         <option name="title" value="" />
@@ -12,7 +12,7 @@
       </options>
     </properties>
     <root id="root">
-      <element id="archive" name="Compliler_Design.jar">
+      <element id="archive" name="Compiler_Design.jar">
         <element id="module-output" name="Compiler Design" />
       </element>
     </root>

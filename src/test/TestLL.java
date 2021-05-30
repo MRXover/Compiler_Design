@@ -316,4 +316,24 @@ public class TestLL {
 
     }
 
+    @Test
+    public void TestGrammar6Follow() throws IOException {
+        grammar = new Grammar("example12.txt");
+        LL = new LL_Automaton(grammar, null);
+        LL.makeFollowSet();
+
+        // FOLLOW(S) = {a, b, $}
+        arr = LL.follow.get(grammar.NonTerminals.get(0));
+        assert(arr.contains(new Token("$", "END_MARKER")));
+        assert(arr.contains(new Token("a", "TERMINAL")));
+        assert(arr.contains(new Token("b", "TERMINAL")));
+        assert(arr.size() == 3);
+        // FOLLOW(A) = {a, b}
+        arr = LL.follow.get(grammar.NonTerminals.get(1));
+        assert(arr.contains(new Token("a", "TERMINAL")));
+        assert(arr.contains(new Token("b", "TERMINAL")));
+        assert(arr.size() == 2);
+
+    }
+
 }

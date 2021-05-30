@@ -39,17 +39,18 @@ public class LL_Automaton extends Automaton {
         follow = new HashMap<>(g.NonTerminals.size());
         for (Token nonTerminal : g.NonTerminals) {
             ArrayList<Token> e;
-            try {
+            //try {
                 e = Follow(nonTerminal, null);
-            } catch (StackOverflowError stackOverflowError){
+            /*} catch (StackOverflowError stackOverflowError){
                 // Для неоднозначной грамматики
                 // Это ужасная вещь, но она нужна для редкого случая, когда два нетерминала взаимосвязаны через Follow
                 // Follow(S) = ... + Follow(A)
                 // Follow(A) = Follow(S)
+                System.out.println("111");
                 e = First(nonTerminal, null);
                 e.add(new Token("$","END_MARKER"));
                 e.remove(new Token("#","EPSILON"));
-            }
+            }*/
             ArrayList<Token> ee = removeDuplicates(e);
             ee.remove(null);
             FollowSet.add(ee);
@@ -90,6 +91,15 @@ public class LL_Automaton extends Automaton {
     ArrayList<Token> First(Token X, Token prev){
         //System.out.println(); System.out.println("Внешний First( " + X.data + " )");
         ArrayList<Token> result = new ArrayList<>();
+        if(X.type.equals("TERMINAL")){
+            result.add(X);
+            return result;
+        }
+        if(X.type.equals("EPSILON")){
+            result.add(X);
+            return result;
+        }
+
         for(Production pro : g.Productions)
             if(pro.nonTerminal.equals(X)){
                 //System.out.println("pro = " + pro);
@@ -178,74 +188,55 @@ public class LL_Automaton extends Automaton {
     public static void main(String[] args) throws IOException {
         LL_Automaton LL = new LL_Automaton(new Grammar("example12.txt"),null);
         System.out.println(LL.Follow(new Token("A", "NONTERMINAL"), null));
+        System.out.println("===");
+        System.out.println(LL.First(new Token("A", "NONTERMINAL"), null));
+
     }
 
     ArrayList<Token> Follow(Token X, Token prev){
         ArrayList<Token> result = new ArrayList<>();
-        int step = 0;
-        System.out.println("X = " + X);
-        // if(step == 5) return result;
         if(prev != null && prev.equals(X))
             return result;
-
-
         // Rule-1
         if (X.equals(g.startSymbol))
             result.add(new Token("$", "END_MARKER"));
-
-
-
         for (int j = 0; j < g.Productions.size(); j++) {
             Production pro = g.Productions.get(j);
             if(pro.definition.contains(X)){
-                System.out.println("pro = " + pro);
                 boolean productionIsNotOver = true;
                 // Rule-2
                 if(pro.getTokenIndex(X) + 1 == pro.size()){
                     result.addAll(Follow(pro.nonTerminal, X));
                     continue;
                 }
-
                 int pointer = pro.getTokenIndex(X);
                 do {
-
                     ArrayList<Token> subList = new ArrayList<>();
                     for (int i = pointer + 1; i < pro.size(); i++)
                         subList.add(pro.get(i));
-
-                    ArrayList<Token> FirstB = First(X, subList, null, false);
-                    System.out.println("subList = " + subList);
-                    System.out.println("FIRST_B = " + FirstB);
+                    ArrayList<Token> FirstB = new ArrayList<>();
+                    for (Token t : subList){
+                        ArrayList<Token> tempFirst = First(t, null);
+                        FirstB.addAll(tempFirst);
+                        if(!tempFirst.contains(new Token("#")))
+                            break;
+                    }
                     if (!FirstB.contains(new Token("#"))) {
-                        System.out.println("Rule-3.1");
+                        //System.out.println("Rule-3.1");
                         result.addAll(FirstB);
                     } else {
-                        System.out.println("Rule-3.2");
+                        //System.out.println("Rule-3.2");
                         result.addAll(FirstB);
                         result.remove(new Token("#"));
                         result.addAll(Follow(pro.nonTerminal, X));
                         break;
                     }
-                    if(!subList.contains(X)) {
+                    if(!subList.contains(X))
                         productionIsNotOver = false;
-                        System.out.println("! contains");
-                    } else {
-
+                    else
                         pointer = pointer + subList.indexOf(X) + 1;
-                        System.out.println("Pointer = " + pointer);
-                        System.out.println("SubList = " + subList);
-
-                    }
-                    step++;
-                    if(step > 3)
-                        break;
-                    System.out.println();
                 } while (productionIsNotOver);
-                System.out.println("while");
-
             }
-
-
         }
         return removeDuplicates(result);
     }

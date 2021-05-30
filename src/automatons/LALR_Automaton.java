@@ -7,17 +7,17 @@ import static util.SupportFunctions.*;
 public class LALR_Automaton extends Automaton {
 
     LR_Automaton LR;
-    public HashMap<Integer, ArrayList<ItemLR>> items;
+    public HashMap<String, ArrayList<ItemLR>> items;
 
     public LALR_Automaton(LR_Automaton LR){
         this.LR = LR;
     }
 
-    public int getIndexFromGOTO(ArrayList<ItemLR> I, Token X){
+    public String getIndexFromGOTO(ArrayList<ItemLR> I, Token X){
         int LR_goto = LR.getIndexFromGOTO(I, X);
         if(LR_goto == -1){
             ArrayList<ItemLR> wanted = removeDuplicates(LR.GOTO(I, X));
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : items.entrySet()){
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : items.entrySet()){
                 boolean isEqual = true;
                 for(ItemLR item : pair.getValue())
                     if (!wanted.contains(item)) {
@@ -28,17 +28,17 @@ public class LALR_Automaton extends Automaton {
                     return pair.getKey();
             }
         }
-        if(items.get(LR_goto) != null)
-            return LR_goto;
+        if(items.get("" + LR_goto) != null)
+            return "" + LR_goto;
         else {
             String s1 = "" + LR_goto;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : items.entrySet()){
-                String s2 = "" + pair.getKey();
-                if(s2.startsWith(s1) || s2.endsWith(s1))
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : items.entrySet()){
+                String s2 = "_" + pair.getKey();
+                if(s2.contains(s1))
                     return pair.getKey();
             }
         }
-        return -1;
+        return "-1";
     }
 
     public void ResizeItems(){
@@ -50,14 +50,14 @@ public class LALR_Automaton extends Automaton {
                 if (LALR_itemsAreEqual(LR.items.get(i), LR.items.get(j))) {
                     indexes.add(i);
                     indexes.add(j);
-                    items.put(Integer.valueOf(i + "" + j), union(LR.items.get(i),LR.items.get(j)));
+                    items.put(i + "_" + j, union(LR.items.get(i),LR.items.get(j)));
                     break;
                 }
             }
         }
         for (int i = 0; i < LR.items.size(); i++)
             if(!indexes.contains(i))
-                items.put(i, LR.items.get(i));
+                items.put("" + i, LR.items.get(i));
 
         //for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR_items.entrySet())
         //    System.out.println(pair.getKey() + " " + pair.getValue());
@@ -107,7 +107,7 @@ public class LALR_Automaton extends Automaton {
     // rj   - свёртка по продукции:
     // acc - принятие
     // err - ошибка
-    public String ACTION(int i, Token a){
+    public String ACTION(String i, Token a){
         ItemLR st = new ItemLR(1, LR.g.Productions.get(0));
         st.setTerminal(new Token("$"));
 

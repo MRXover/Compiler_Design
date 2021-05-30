@@ -67,6 +67,9 @@ public class Controller {
     @FXML
     private MenuItem LALR_Parse;
 
+    @FXML
+    private MenuItem isAugmented;
+
     LL_Automaton   LL;
     SLR_Automaton  SLR;
     LR_Automaton   LR;
@@ -105,6 +108,7 @@ public class Controller {
 
             try {
                 Grammar = new Grammar(fileObject.getPath());
+                //Grammar.isAugmented = true;
                 String str = "";
                 try (Scanner scanner = new Scanner(fileObject)) {
                     while (scanner.hasNextLine())
@@ -281,7 +285,11 @@ public class Controller {
             if(LL.SyntaxMatrix == null){
                 LL.makeSyntaxMatrix();
             }
-            new Parser(GrammarType.LL, Grammar).Parse(Grammar.Lexer(CodeArea.getText()),LL);
+            try {
+                new Parser(GrammarType.LL, Grammar).Parse(Grammar.Lexer(CodeArea.getText()),LL);
+            } catch (Exception e){
+                LogConsole.appendText("LL PARSING: FAIL\n");
+            }
         });
         ///============================= LL ==============================//
 
@@ -472,8 +480,12 @@ public class Controller {
             for(ArrayList<ItemLR> list : LR.items){
                 root.appendText("\n");
                 root.appendText("I" + i + " =\n");
-                for(ItemLR item : list)
-                    root.appendText("    " + item + "\n");
+                for(ItemLR item : list) {
+                    root.appendText("    " + item.nonTerminal.data + " : ");
+                    for(Token t : item.definition)
+                        root.appendText(t.data + " ");
+                    root.appendText(", " + item.terminal.data + "\n");
+                }
                 i++;
             }
 
@@ -526,7 +538,7 @@ public class Controller {
                         Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
 
             int ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
                 root.add(new Label(String.valueOf(pair.getKey())), 0, ind+1);
                 ind++;
@@ -534,20 +546,20 @@ public class Controller {
 
             // GOTO
             ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 for (int j = leftNonTerminalsPosition; j < rightNonTerminalsPosition+1; j++) {
-                    int result = LALR.getIndexFromGOTO(pair.getValue(), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
-                    if( result == -1)
+                    String result = LALR.getIndexFromGOTO(pair.getValue(), Grammar.NonTerminals.get(j - leftNonTerminalsPosition));
+                    if(result.equals("-1"))
                         root.add(new Label(" "), j, ind+1);
                     else
-                        root.add(new Label(String.valueOf(result)), j, ind+1);
+                        root.add(new Label(result), j, ind+1);
                 }
                 ind++;
             }
 
             // ACTION
             ind = 0;
-            for(Map.Entry<Integer, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
                     if(j != Grammar.Terminals.size())
@@ -587,6 +599,17 @@ public class Controller {
 
 
         ///============================ LALR ==============================//
+
+
+        isAugmented.setOnAction(event -> {
+            if(Grammar == null){
+                LogConsole.appendText("Grammar is not loaded\n");
+                return;
+            }
+            Grammar.isAugmented = true;
+
+        });
+
 
     }
 }

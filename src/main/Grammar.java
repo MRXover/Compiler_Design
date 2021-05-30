@@ -74,7 +74,7 @@ public class Grammar {
             while (lineScanner.hasNextLine()) {
                 String line = lineScanner.nextLine();
                 // Убираем комментарии
-                if(!line.contains("//"))
+                if(!line.contains("//") && line.length() > 1)
                     rawTokens.add(line);
             }
         }
