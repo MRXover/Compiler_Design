@@ -8,7 +8,7 @@ import java.util.*;
 
 import static util.SupportFunctions.*;
 
-public class LL_Automaton extends Automaton {
+public class LL_Automaton {
 
     Grammar g;
     Controller controller;

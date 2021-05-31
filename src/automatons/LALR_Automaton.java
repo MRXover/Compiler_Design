@@ -141,4 +141,9 @@ public class LALR_Automaton extends Automaton {
         }
         return "err";
     }
+
+    @Override
+    public void makeActionTable() {
+
+    }
 }

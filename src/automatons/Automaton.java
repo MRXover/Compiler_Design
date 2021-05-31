@@ -1,6 +1,8 @@
 package automatons;
 
 
-public abstract class Automaton {
+import util.Token;
 
+public abstract class Automaton {
+    public abstract void makeActionTable();
 }

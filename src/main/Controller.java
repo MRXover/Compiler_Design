@@ -53,9 +53,12 @@ public class Controller {
     @FXML
     private MenuItem MakeActionTable;
     @FXML
+    public CheckMenuItem synchLL;
+
+    @FXML
     private MenuItem SLR_Parse;
     @FXML
-    public CheckMenuItem synchLL;
+    private MenuItem ShowItemsSLR;
 
     @FXML
     private MenuItem ShowItemsLR;
@@ -349,6 +352,7 @@ public class Controller {
 
             // ACTION
             SLR.buildFollow();
+            SLR.makeActionTable();
             for (int i = 0; i < SLR.items.size(); i++) {
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
@@ -356,7 +360,7 @@ public class Controller {
                         a = Grammar.Terminals.get(j - 1);
                     else
                         a = new Token("$", "END_MARKER");
-                    String result = SLR.ACTION(i, a);
+                    String result = SLR.actionTable.get(i).get(a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
                     else
@@ -367,6 +371,41 @@ public class Controller {
             ScrollPane scrollPane = new ScrollPane(root);
             Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
             newWindow.setTitle("ACTION and GOTO table");
+            newWindow.setScene(scene);
+            newWindow.show();
+        });
+
+        ShowItemsSLR.setOnAction(event -> {
+            if(!Grammar.isAugmented)
+                Grammar.augmentGivenGrammar();
+            if(SLR == null)
+                SLR = new SLR_Automaton(Grammar);
+            if(SLR.items == null)
+                SLR.buildAllItems();
+
+            Stage newWindow = new Stage();
+            BorderPane border = new BorderPane();
+            TextArea root = new TextArea();
+
+            int i = 0;
+            for(ArrayList<Production> list : SLR.items){
+                root.appendText("\n");
+                root.appendText("I" + i + " =\n");
+                for(Production pro : list) {
+                    root.appendText("    " + pro.nonTerminal.data + " : ");
+                    for(Token t : pro.definition)
+                        root.appendText(t.data + " ");
+                    root.appendText("\n");
+                }
+                i++;
+            }
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            border.setCenter(root);
+            Scene scene = new Scene(border, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("SLR Items");
             newWindow.setScene(scene);
             newWindow.show();
         });
@@ -436,6 +475,7 @@ public class Controller {
             }
 
             // ACTION
+            LR.makeActionTable();
             for (int i = 0; i < LR.items.size(); i++) {
                 for (int j = 1; j < Grammar.Terminals.size() + 1; j++) {
                     Token a;
@@ -443,7 +483,7 @@ public class Controller {
                         a = Grammar.Terminals.get(j - 1);
                     else
                         a = new Token("$", "END_MARKER");
-                    String result = LR.ACTION(i, a);
+                    String result = LR.actionTable.get(i).get(a);
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, i+1);
                     else

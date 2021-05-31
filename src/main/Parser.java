@@ -151,7 +151,12 @@ public class Parser {
         int pointer = 0;
         int stringIndex = 1;
 
+        int stop = 0;
+        automaton.makeActionTable();
         while (true) {
+            //stop++;
+            if(stop > 5)
+                break;
             int s = stack.peek();
 
             root.add(new Label("(" + stringIndex + ")"), 0, stringIndex);
@@ -169,9 +174,13 @@ public class Parser {
             root.add(new Label(inputString), 3, stringIndex);
 
             String action = "";
+
             switch(type){
                 case SLR:
-                    action = ((SLR_Automaton)automaton).ACTION(s, a);
+                    //if(s == -1)
+                        action = ((SLR_Automaton)automaton).ACTION(s, a);
+                    //else
+                    //    action = ((SLR_Automaton)automaton).actionTable.get(s).get(a);
                     break;
                 case LR:
                     action = ((LR_Automaton)automaton).ACTION(s, a);
@@ -218,9 +227,14 @@ public class Parser {
                 root.add(new Label("SUCCESS"), 4, stringIndex);
                 break;
             } else if(action.charAt(0) == 'e'){
-                System.out.println("ERROR");
-                root.add(new Label("ERROR"), 4, stringIndex);
-                break;
+                if(action.equals("err")){
+                    System.out.println("ERROR");
+                    root.add(new Label("ERROR"), 4, stringIndex);
+                    break;
+                } else if (action.charAt(1) == '1'){
+                    root.add(new Label("Отсутствует операнд"), 4, stringIndex);
+                    stack.push(3);
+                }
             }
             stringIndex++;
         }

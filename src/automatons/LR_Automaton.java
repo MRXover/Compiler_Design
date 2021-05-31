@@ -1,5 +1,6 @@
 package automatons;
 
+import javafx.scene.control.Label;
 import main.Grammar;
 import util.ItemLR;
 import util.Production;
@@ -8,6 +9,7 @@ import util.Token;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static util.SupportFunctions.createDOT;
 import static util.SupportFunctions.removeDuplicates;
@@ -17,9 +19,27 @@ public class LR_Automaton extends Automaton {
 
     public Grammar g;
     public ArrayList<ArrayList<ItemLR>> items;
+    public HashMap<Integer, HashMap<Token, String>> actionTable;
 
     public LR_Automaton(Grammar grammar){
         g = grammar;
+    }
+
+    @Override
+    public void makeActionTable(){
+        actionTable = new HashMap<>();
+        for (int i = 0; i < items.size(); i++) {
+            actionTable.put(i, new HashMap<>());
+            for (Token t : g.Terminals) {
+                String result = ACTION(i, t);
+                if(result.equals("err"))
+                    actionTable.get(i).put(t, " ");
+                else
+                    actionTable.get(i).put(t, result);
+            }
+            Token a = new Token("$", "END_MARKER");
+            actionTable.get(i).put(a, ACTION(i, a));
+        }
     }
 
     // si  - перенос и размещение в стеке состояния i

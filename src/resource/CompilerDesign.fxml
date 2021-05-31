@@ -72,6 +72,7 @@
             </Menu>
             <Menu mnemonicParsing="false" text="SLR">
                <items>
+                  <MenuItem fx:id="ShowItemsSLR" mnemonicParsing="false" text="Show SLR Items" />
                   <MenuItem fx:id="MakeActionTable" mnemonicParsing="false" text="Make Action and GOTO table" />
                   <MenuItem fx:id="SLR_Parse" mnemonicParsing="false" text="Parse" />
                </items>
