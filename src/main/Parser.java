@@ -23,6 +23,8 @@ public class Parser {
     }
 
     public void Parse(ArrayList<Token> Input, LL_Automaton automaton) {
+
+        boolean errorRecovery = automaton.getController().errorRecoveryLL.isSelected();
         int codePointer = 0;
         Stack<Token> stack = new Stack<>();
         stack.push(new Token("$"));
@@ -86,11 +88,45 @@ public class Parser {
                     stringIndex++;
                     continue;
                 }
-                Production p = automaton.SyntaxMatrix.get(stack.peek().data).get(Input.get(codePointer).data);
+                Production p = null;
+                try{
+                    p = automaton.SyntaxMatrix.get(stack.peek().data).get(Input.get(codePointer).data);
+                } catch(NullPointerException e){
+                    if(errorRecovery && automaton.first.get(stack.get((stack.size()-1)-1)).contains(Input.get(codePointer))){
+                        root.add(new Label("Ошибка, ожидалось " + stack.peek().data),3, stringIndex);
+                        stack.pop();
+                        stringIndex++;
+                        continue;
+                    } else{
+                        automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
+                        root.add(new Label("ERROR"), 3, stringIndex);
+                        break;
+                    }
+                }
                 if(p == null){
+                    if(errorRecovery) {
+                        if (automaton.first.get(stack.peek()).contains(Input.get(codePointer + 1))) {
+                            root.add(new Label("Ошибка, пропускаем " + Input.get(codePointer).data), 3, stringIndex);
+                            codePointer++;
+                            stringIndex++;
+                            continue;
+                        }
+                        if (!automaton.first.get(stack.peek()).contains(Input.get(codePointer))){
+                            Token t;
+                            if(automaton.first.get(stack.peek()).get(0).type.equals("EPSILON"))
+                                t = automaton.first.get(stack.peek()).get(1);
+                            else
+                                t = automaton.first.get(stack.peek()).get(0);
+                            Input.add(codePointer, t);
+                            root.add(new Label("Ошибка, жидалось " + t.data), 3, stringIndex);
+                            stringIndex++;
+                            continue;
+                        }
+                    }
                     automaton.getController().LogConsole.appendText("LL PARSING: FAIL\n");
                     root.add(new Label("ERROR"), 3, stringIndex);
                     break;
+
                 }
                 if(p.nonTerminal.type.equals("synch")){
                     if(stack.size() == 2){

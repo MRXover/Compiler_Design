@@ -19,7 +19,6 @@ public class SLR_Automaton extends Automaton {
     public ArrayList<ArrayList<Production>> items;
     public HashMap<Integer, HashMap<Token, String>> actionTable;
 
-
     public SLR_Automaton(Grammar grammar){
         g = grammar;
     }
@@ -85,17 +84,7 @@ public class SLR_Automaton extends Automaton {
         return set;
     }
 
-    public static void main(String[] args) throws IOException {
-        SLR_Automaton a = new SLR_Automaton(new Grammar("example14.txt"));
-        //a.buildAllItems();
 
-        Production p1 = createItem(0, a.g.Productions.get(0));
-        ArrayList<Production> I0 = a. CLOSURE(p1);
-        ArrayList<Production> I1 = a.GOTO(I0, new Token("E", "NONTERMINAL"));
-        ArrayList<Production> I4 = a.GOTO(I1, new Token("+", "TERMINAL"));
-        System.out.println("========================================");
-        System.out.println(a.GOTO(I4, new Token("E", "NONTERMINAL")));
-    }
 
     public void buildAllItems(){
         int index = 0;
@@ -116,7 +105,6 @@ public class SLR_Automaton extends Automaton {
             if(!tokensToCheck.contains(t))
                 tokensToCheck.add(t);
         }
-
         // 1st Iteration
         for(Token tok : tokensToCheck){
             items.add(removeDuplicates(GOTO(items.get(0), tok)));
@@ -125,10 +113,7 @@ public class SLR_Automaton extends Automaton {
         }
         oldIndex = index;
         int left = 1;
-
         tokensToCheck.clear();
-
-        int iter = 0;
         do{
             for (int i = left; i < oldIndex + 1; i++) {
                 for (Production pro : items.get(i)) {
@@ -139,29 +124,18 @@ public class SLR_Automaton extends Automaton {
                     if (!tokensToCheck.contains(t))
                         tokensToCheck.add(t);
                 }
-                //System.out.println(iter + " Iteration " + tokensToCheck);
-                //System.out.println("i = " + i + " = " + items.get(i));
                 for (Token t : tokensToCheck) {
                     ArrayList<Production> X = removeDuplicates(GOTO(items.get(i), t));
-                    if(i == -5 && t.data.equals("E")){
-                        System.out.println("X = " + X);
-                        System.out.println("5 = " + items.get(5));
-                    }
                     if (!items.contains(X)) {
                         items.add(X);
-                        //System.out.println("For " + t.data + " " + i);
-                        //System.out.println(X);
                         index++;
                     }
                 }
                 tokensToCheck.clear();
-                iter++;
             }
             left = oldIndex;
             oldIndex = index;
-
         } while( left != index);
-
         //for (int i = 0; i < items.size(); i++) System.out.println(i + " = " + items.get(i));
     }
 
@@ -177,7 +151,9 @@ public class SLR_Automaton extends Automaton {
     @Override
     public void makeActionTable(){
         actionTable = new HashMap<>();
-        boolean e1 = true;
+        boolean e1 = false;
+
+
         for (int i = 0; i < items.size(); i++) {
             actionTable.put(i, new HashMap<>());
             for (Token t : g.Terminals) {
@@ -240,8 +216,11 @@ public class SLR_Automaton extends Automaton {
         if(i == -1)
             return "err";
 
+        System.out.println(items.get(i).get(0));
         Token t = items.get(i).get(0).nonTerminal;
         ArrayList<Token> f = FollowLR.get(t);
+        System.out.println("Follow = " + f);
+        System.out.println(t);
         for (Token tok : f) {
             if (tok.data.equals(a.data)) {
                 for(Production pro : items.get(i)) {
@@ -266,6 +245,41 @@ public class SLR_Automaton extends Automaton {
             FollowLR.put(t, removeDuplicates(FollowLR(t, null)));
         }
     }
+    public static void main(String[] args) throws IOException {
+        SLR_Automaton a = new SLR_Automaton(new Grammar("example14.txt"));
+        /*a.buildAllItems();
+        a.buildFollow();
+        System.out.println(a.ACTION(3, new Token("id", "TERMINAL")));*/
+        System.out.println(a.FollowLR(new Token("E", "NONTERMINAL")));
+
+    }
+
+    private ArrayList<Token> FollowLR(Token t){
+        ArrayList<Token> result = new ArrayList<>();
+
+        boolean setIsUpdated = true;
+
+        for (Production pro : g.Productions){
+            if(!pro.definition.contains(t))
+                continue;
+
+            for(int i = 0; i < pro.definition.size() - 1; i++){
+                if(pro.definition.get(i).equals(t)){
+                    if(pro.definition.get(i + 1).type.equals("TERMINAL"))
+                        result.add(pro.definition.get(i + 1));
+                    //else
+                        // здесь скорее всего живёт баг
+                        //result.addAll(LL.First(pro.definition.get(i+1), null));
+                }
+            }
+        }
+        if(g.startSymbol.equals(t))
+            result.add(new Token("$", "END_MARKER"));
+        return result;
+    }
+
+
+
 
     private ArrayList<Token> FollowLR(Token t, Token prev){
         //System.out.println("t= " + t + " prev = " + prev);

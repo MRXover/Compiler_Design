@@ -98,6 +98,7 @@
             <Menu fx:id="Options1" mnemonicParsing="false" text="Error recovery">
                <items>
                   <CheckMenuItem fx:id="synchLL" mnemonicParsing="false" text="enable synch for LL" />
+                  <CheckMenuItem fx:id="errorRecoveryLL" mnemonicParsing="false" text="enable for LL" />
                </items>
             </Menu>
         </menus>

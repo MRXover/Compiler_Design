@@ -114,6 +114,7 @@ public class Grammar {
             definitionIndex++;
         }
         Terminals.add(new Token("$", "END_MARKER"));
+        Terminals = removeDuplicates(Terminals);
         startSymbol = NonTerminals.get(0);
     }
 

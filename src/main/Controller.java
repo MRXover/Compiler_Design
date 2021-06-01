@@ -52,8 +52,11 @@ public class Controller {
     private MenuItem LL_Parse;
     @FXML
     private MenuItem MakeActionTable;
+
     @FXML
     public CheckMenuItem synchLL;
+    @FXML
+    public CheckMenuItem errorRecoveryLL;
 
     @FXML
     private MenuItem SLR_Parse;
@@ -239,7 +242,7 @@ public class Controller {
             LL.makeSyntaxMatrix();
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
-            root.setGridLinesVisible(true);
+            //root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -260,11 +263,11 @@ public class Controller {
             for (int i = 0; i < Grammar.NonTerminals.size(); i++) {
                 for (int j = 0; j < Grammar.Terminals.size(); j++) {
                     if (LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data).get(Grammar.Terminals.get(j).data) == null) {
-                        GridPane.setHalignment(new Label(""), HPos.LEFT);
+                        //GridPane.setHalignment(new Label(""), HPos.LEFT);
                         root.add(new Label(""), j + 1, i + 1);
                     } else {
-                        GridPane.setHalignment(new Label(" " + LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data)
-                                .get(Grammar.Terminals.get(j).data).toString() + " "), HPos.LEFT);
+                        //GridPane.setHalignment(new Label(" " + LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data)
+                        //        .get(Grammar.Terminals.get(j).data).toString() + " "), HPos.LEFT);
                         root.add(new Label(" " + LL.SyntaxMatrix.get(Grammar.NonTerminals.get(i).data)
                                 .get(Grammar.Terminals.get(j).data).toString() + " "), j + 1, i + 1);
                     }
@@ -296,6 +299,7 @@ public class Controller {
                 new Parser(GrammarType.LL, Grammar).Parse(Grammar.Lexer(CodeArea.getText()),LL);
             } catch (Exception e){
                 LogConsole.appendText("LL PARSING: FAIL\n");
+                e.printStackTrace();
             }
         });
         ///============================= LL ==============================//
