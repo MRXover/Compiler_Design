@@ -158,6 +158,8 @@ public class Parser {
     }
 
     public void Parse(ArrayList<Token> Input, Automaton automaton) {
+        boolean errorRecovery = true;
+
         Stage newWindow = new Stage();
         GridPane root = new GridPane();
 
@@ -191,7 +193,7 @@ public class Parser {
         automaton.makeActionTable();
         while (true) {
             //stop++;
-            if(stop > 5)
+            if(stop > 9)
                 break;
             int s = stack.peek();
 
@@ -201,7 +203,6 @@ public class Parser {
             String symbolsString = "";
             for(Token t : symbols)
                 symbolsString += t.data;
-
             root.add(new Label(symbolsString), 2, stringIndex);
 
             String inputString = "";
@@ -213,10 +214,10 @@ public class Parser {
 
             switch(type){
                 case SLR:
-                    //if(s == -1)
+                    if(s == -1)
                         action = ((SLR_Automaton)automaton).ACTION(s, a);
-                    //else
-                    //    action = ((SLR_Automaton)automaton).actionTable.get(s).get(a);
+                    else
+                        action = ((SLR_Automaton)automaton).actionTable.get(s).get(a);
                     break;
                 case LR:
                     action = ((LR_Automaton)automaton).ACTION(s, a);
@@ -244,32 +245,42 @@ public class Parser {
                 System.out.println(shift);
                 root.add(new Label(shift), 4, stringIndex);
                 int count = g.Productions.get(prodNumber).definition.size();
-                for (int j = 0; j < count; j++){
+                for (int j = 0; j < count; j++)
                     symbols.remove(symbols.size() - 1);
-                }
                 symbols.add(g.Productions.get(prodNumber).nonTerminal);
 
                 if(type == GrammarType.SLR)
                     stack.push( ((SLR_Automaton)automaton).getIndexFromGOTO(((SLR_Automaton)automaton).items.get(stack.peek()),
                             g.Productions.get(prodNumber).nonTerminal));
-
                 else
                     stack.push( ((LR_Automaton)automaton).getIndexFromGOTO(((LR_Automaton)automaton).items.get(stack.peek()),
                             g.Productions.get(prodNumber).nonTerminal));
-
 
             } else if(action.charAt(0) == 'a'){
                 System.out.println("SUCCESS");
                 root.add(new Label("SUCCESS"), 4, stringIndex);
                 break;
-            } else if(action.charAt(0) == 'e'){
-                if(action.equals("err")){
-                    System.out.println("ERROR");
-                    root.add(new Label("ERROR"), 4, stringIndex);
-                    break;
-                } else if (action.charAt(1) == '1'){
+            } else if(action.equals("err")) {
+                System.out.println("ERROR");
+                root.add(new Label("ERROR"), 4, stringIndex);
+                break;
+            }
+            if(errorRecovery){
+                if (action.equals("e1")){
                     root.add(new Label("Отсутствует операнд"), 4, stringIndex);
                     stack.push(3);
+                    symbols.add( new Token("id", "TERMINAL"));
+                    a = input.get(pointer);
+                } else if (action.equals("e2")){
+                    root.add(new Label("Лишняя правая скобка"), 4, stringIndex);
+                    input.remove(pointer);
+                    a = input.get(pointer);
+                } else if (action.equals("e3")){
+                    root.add(new Label("Отсутствует оператор"), 4, stringIndex);
+                    stack.pop();
+                    stack.push(3);
+                    input.add(pointer, new Token("+", "TERMINAL"));
+                    a = input.get(pointer);
                 }
             }
             stringIndex++;
@@ -277,7 +288,12 @@ public class Parser {
 
         ScrollPane scrollPane = new ScrollPane(root);
         Scene scene = new Scene(scrollPane, root.getMaxWidth(), root.getMaxHeight());
-        newWindow.setTitle("LR Parse table");
+        if (automaton instanceof LR_Automaton)
+            newWindow.setTitle("LR Parse table");
+        if (automaton instanceof SLR_Automaton)
+            newWindow.setTitle("SLR Parse table");
+        if (automaton instanceof LALR_Automaton)
+            newWindow.setTitle("LALR Parse table");
         newWindow.setScene(scene);
         newWindow.show();
     }

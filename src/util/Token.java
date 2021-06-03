@@ -33,10 +33,6 @@ public class Token {
         }
     }
 
-    public boolean isEpsilon(){
-        return type.equals("EPSILON");
-    }
-
     @Override
     public String toString(){
         return "(" + data + "," + type + ")";

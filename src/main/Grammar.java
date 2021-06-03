@@ -11,20 +11,9 @@ public class Grammar {
     public Token startSymbol;
     public ArrayList<Token> Terminals;
     public ArrayList<Token> NonTerminals;
-
     public ArrayList<Production> Productions;
 
     boolean isAugmented;
-
-    public static void main(String[] args) {
-
-    }
-
-    public void printGrammar(){
-        System.out.println();
-        for (Production production : Productions)
-            System.out.println(production.toString());
-    }
 
     public void augmentGivenGrammar(){
         Token start = new Token(Productions.get(0).nonTerminal.data, "NONTERMINAL");

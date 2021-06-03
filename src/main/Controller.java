@@ -4,7 +4,6 @@ import automatons.*;
 import javafx.scene.layout.BorderPane;
 import util.*;
 import javafx.fxml.FXML;
-import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.scene.*;
 import javafx.scene.control.*;
@@ -27,17 +26,19 @@ public class Controller {
     @FXML
     public TextArea CodeArea;
 
+    //================ Edit ================
     @FXML
-    public Button Clean;
+    public MenuItem SaveAs;
     @FXML
-    public Button LoadGrammar;
+    public MenuItem Clear;
+    @FXML
+    public CheckMenuItem GridForTables;
 
+    //================ Left Factoring ================
     @FXML
-    private Button isLeftRecursive;
+    private MenuItem IsLeftRecursive;
     @FXML
-    private Button LeftFactoring;
-    @FXML
-    public Button SaveFile;
+    private MenuItem LeftFactorization;
 
 
     @FXML
@@ -53,10 +54,14 @@ public class Controller {
     @FXML
     private MenuItem MakeActionTable;
 
+
+    //================ Error Recovery ================
     @FXML
     public CheckMenuItem synchLL;
     @FXML
     public CheckMenuItem errorRecoveryLL;
+    @FXML
+    public CheckMenuItem errorRecoveryLR;
 
     @FXML
     private MenuItem SLR_Parse;
@@ -71,12 +76,11 @@ public class Controller {
     private MenuItem LR_Parse;
 
     @FXML
+    private MenuItem ShowItemsLALR;
+    @FXML
     private MenuItem LALR_MakeActionTable;
     @FXML
     private MenuItem LALR_Parse;
-
-    @FXML
-    private MenuItem isAugmented;
 
     LL_Automaton   LL;
     SLR_Automaton  SLR;
@@ -86,12 +90,12 @@ public class Controller {
     @FXML
     void initialize() {
 
-        Clean.setOnAction(actionEvent -> {
+        Clear.setOnAction(actionEvent -> {
             GrammarArea.setText("");
             LogConsole.appendText("Grammar area was cleaned\n");
         });
 
-        isLeftRecursive.setOnAction(actionEvent -> {
+        IsLeftRecursive.setOnAction(actionEvent -> {
             if(Grammar == null){
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
@@ -101,19 +105,16 @@ public class Controller {
 
         LoadFromFile.setOnAction(actionEvent -> {
             Stage Stage = (Stage) menuBar.getScene().getWindow();
-
             FileChooser fileChooser = new FileChooser();
             FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
             fileChooser.getExtensionFilters().add(txtFilter);
             fileChooser.setTitle("File choosing");
             fileChooser.setInitialDirectory(new File("./"));
             File fileObject = fileChooser.showOpenDialog(Stage);
-
             if(fileObject == null){
                 LogConsole.appendText("Input error\n");
                 return;
             }
-
             try {
                 Grammar = new Grammar(fileObject.getPath());
                 //Grammar.isAugmented = true;
@@ -132,18 +133,14 @@ public class Controller {
             }
         });
 
-        SaveFile.setOnAction(actionEvent -> {
-            Node source = (Node) actionEvent.getSource();
-            Stage Stage = (Stage) source.getScene().getWindow();
-
+        SaveAs.setOnAction(actionEvent -> {
+            Stage Stage = (Stage)SaveAs.getParentPopup().getOwnerWindow();
             FileChooser fileChooser = new FileChooser();
             FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files(*.txt)","*.txt");
             fileChooser.getExtensionFilters().add(txtFilter);
             fileChooser.setTitle("File saving");
             fileChooser.setInitialDirectory(new File("./"));
-
             File file = fileChooser.showSaveDialog(Stage);
-
             try(FileWriter writer = new FileWriter(file.getAbsoluteFile(), false)) {
                 writer.write(GrammarArea.getText());
                 writer.append('\n');
@@ -152,10 +149,9 @@ public class Controller {
                 System.out.println(ex.getMessage());
                 LogConsole.appendText(ex.getMessage());
             }
-
         });
 
-        LeftFactoring.setOnAction(actionEvent -> {
+        LeftFactorization.setOnAction(actionEvent -> {
             if(Grammar == null){
                 LogConsole.appendText("Grammar is not loaded\n");
                 return;
@@ -164,11 +160,9 @@ public class Controller {
                 LogConsole.appendText("Grammar is not left recursive\n");
                 return;
             }
-
             LogConsole.appendText("BEFORE :\n");
             for(Production pro : Grammar.Productions)
                 LogConsole.appendText(pro + "\n");
-
             while(Grammar.isLeftRecursive()){
                 for(Production pro : Grammar.Productions){
                     if(pro.nonTerminal.data.equals(pro.get(0).data)) {
@@ -176,15 +170,12 @@ public class Controller {
                         Production newProd1 = new Production(pro.nonTerminal);
                         Production newProd2 = new Production(newToken);
                         Production newProd3 = new Production(newToken);
-
                         for(int i = 1; i < pro.definition.size(); i++){
                             newProd1.add(pro.definition.get(i));
                             newProd2.add(pro.definition.get(i));
                         }
-
                         newProd2.add(newToken);
                         newProd3.add(new Token("#", "EPSILON"));
-
                         Grammar.Productions.remove(pro);
                         Grammar.Productions.add(newProd1);
                         Grammar.Productions.add(newProd2);
@@ -193,14 +184,9 @@ public class Controller {
                     }
                 }
             }
-
             LogConsole.appendText("\nAFTER :\n");
             for(Production pro : Grammar.Productions)
                 LogConsole.appendText(pro + "\n");
-        });
-
-        LoadGrammar.setOnAction(event -> {
-
         });
 
         //============================== LL ==============================//
@@ -242,7 +228,8 @@ public class Controller {
             LL.makeSyntaxMatrix();
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
-            //root.setGridLinesVisible(true);
+            if(GridForTables.isSelected())
+                root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -314,11 +301,13 @@ public class Controller {
 
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
-            SLR = new SLR_Automaton(Grammar);
+            SLR = new SLR_Automaton(Grammar, this);
             SLR.buildAllItems();
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
+            if(GridForTables.isSelected())
+                root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -331,15 +320,15 @@ public class Controller {
             int rightNonTerminalsPos = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
 
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
+                root.add(new Label(" " + String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             }
             for (int i = leftNonTerminalsPos; i < rightNonTerminalsPos; i++)
-                root.add(new Label(String.valueOf(
+                root.add(new Label(" " + String.valueOf(
                         Grammar.NonTerminals.get(i - leftNonTerminalsPos +1).data)), i + 1, 0);
 
             for (int i = 0; i < SLR.items.size(); i++) {
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
-                root.add(new Label(String.valueOf(i)), 0, i+1);
+                root.add(new Label(" " + String.valueOf(i)), 0, i+1);
             }
 
             // GOTO
@@ -350,7 +339,7 @@ public class Controller {
                     if( result == -1)
                         root.add(new Label(" "), j, i+1);
                     else
-                        root.add(new Label(String.valueOf(result)), j, i+1);
+                        root.add(new Label(" " + String.valueOf(result)), j, i+1);
                 }
             }
 
@@ -383,7 +372,7 @@ public class Controller {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
             if(SLR == null)
-                SLR = new SLR_Automaton(Grammar);
+                SLR = new SLR_Automaton(Grammar, this);
             if(SLR.items == null)
                 SLR.buildAllItems();
 
@@ -418,7 +407,7 @@ public class Controller {
             if(!Grammar.isAugmented)
                 Grammar.augmentGivenGrammar();
             if(SLR == null)
-                SLR = new SLR_Automaton(Grammar);
+                SLR = new SLR_Automaton(Grammar, this);
             if(SLR.FollowLR == null)
                 SLR.buildFollow();
             if(SLR.items == null)
@@ -444,6 +433,8 @@ public class Controller {
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
+            if(GridForTables.isSelected())
+                root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -456,10 +447,10 @@ public class Controller {
             int rightNonTerminalsPosition = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
 
             for (int i = 0; i < Grammar.Terminals.size(); i++) {
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
+                root.add(new Label(" " + String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             }
             for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++)
-                root.add(new Label(String.valueOf(
+                root.add(new Label(" " + String.valueOf(
                         Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
 
             for (int i = 0; i < LR.items.size(); i++) {
@@ -474,7 +465,7 @@ public class Controller {
                     if( result == -1)
                         root.add(new Label(" "), j, i+1);
                     else
-                        root.add(new Label(String.valueOf(result)), j, i+1);
+                        root.add(new Label(" " + result), j, i+1);
                 }
             }
 
@@ -551,6 +542,47 @@ public class Controller {
 
 
         ///============================ LALR ==============================//
+
+        ShowItemsLALR.setOnAction(event -> {
+            if(!Grammar.isAugmented)
+                Grammar.augmentGivenGrammar();
+            if(LALR == null){
+                LR = new LR_Automaton(Grammar);
+                LR.buildAllItems();
+
+                LALR = new LALR_Automaton(LR);
+                LALR.ResizeItems();
+            }
+            if(LALR.items == null){
+                LALR.ResizeItems();
+            }
+
+            Stage newWindow = new Stage();
+            BorderPane border = new BorderPane();
+            TextArea root = new TextArea();
+
+            for(Map.Entry<String, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
+                root.appendText("\n");
+                root.appendText("I" + pair.getKey() + " =\n");
+                for(ItemLR item : pair.getValue()) {
+                    root.appendText("    " + item.nonTerminal.data + " : ");
+                    for(Token t : item.definition)
+                        root.appendText(t.data + " ");
+                    root.appendText(", " + item.terminal.data + "\n");
+                }
+                System.out.println(pair.getKey() + " " + pair.getValue());
+            }
+
+            newWindow.setX(200);
+            newWindow.setY(100);
+
+            border.setCenter(root);
+            Scene scene = new Scene(border, root.getMaxWidth(), root.getMaxHeight());
+            newWindow.setTitle("LALR Items");
+            newWindow.setScene(scene);
+            newWindow.show();
+        });
+
         LALR_MakeActionTable.setOnAction(event -> {
             if(Grammar == null) {
                 LogConsole.appendText("Grammar is not loaded\n");
@@ -568,6 +600,8 @@ public class Controller {
 
             Stage newWindow = new Stage();
             GridPane root = new GridPane();
+            if(GridForTables.isSelected())
+                root.setGridLinesVisible(true);
 
             newWindow.setX(200);
             newWindow.setY(100);
@@ -580,15 +614,15 @@ public class Controller {
             int rightNonTerminalsPosition = Grammar.NonTerminals.size() + Grammar.Terminals.size() - 1;
 
             for (int i = 0; i < Grammar.Terminals.size(); i++)
-                root.add(new Label(String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
+                root.add(new Label(" " + String.valueOf(Grammar.Terminals.get(i).data)), i+1, 0);
             for (int i = leftNonTerminalsPosition; i < rightNonTerminalsPosition; i++)
-                root.add(new Label(String.valueOf(
+                root.add(new Label(" " + String.valueOf(
                         Grammar.NonTerminals.get(i - leftNonTerminalsPosition +1).data)), i + 1, 0);
 
             int ind = 0;
             for(Map.Entry<String, ArrayList<ItemLR>> pair : LALR.items.entrySet()){
                 //GridPane.setHalignment(new Label(String.valueOf(Grammar.Terminals.get(i))), HPos.LEFT);
-                root.add(new Label(String.valueOf(pair.getKey())), 0, ind+1);
+                root.add(new Label(" " + String.valueOf(pair.getKey())), 0, ind+1);
                 ind++;
             }
 
@@ -600,7 +634,7 @@ public class Controller {
                     if(result.equals("-1"))
                         root.add(new Label(" "), j, ind+1);
                     else
-                        root.add(new Label(result), j, ind+1);
+                        root.add(new Label(" " + result), j, ind+1);
                 }
                 ind++;
             }
@@ -619,7 +653,7 @@ public class Controller {
                     if(result.equals("err"))
                         root.add(new Label(" "), j + 1, ind+1);
                     else
-                        root.add(new Label(result), j, ind+1);
+                        root.add(new Label(" " + result), j, ind+1);
                 }
                 ind++;
             }
@@ -649,15 +683,7 @@ public class Controller {
         ///============================ LALR ==============================//
 
 
-        isAugmented.setOnAction(event -> {
-            if(Grammar == null){
-                LogConsole.appendText("Grammar is not loaded\n");
-                return;
-            }
-            Grammar.isAugmented = true;
-
-        });
-
-
     }
+
+
 }

@@ -229,7 +229,6 @@ public class LR_Automaton extends Automaton {
 
     public static void main(String[] args) throws IOException {
         LR_Automaton LR = new LR_Automaton(new Grammar("example11.txt"));
-        LR.g.printGrammar();
         LR.g.augmentGivenGrammar();
 
         ItemLR item = new ItemLR(0, LR.g.Productions.get(0), new Token("$"));
@@ -242,7 +241,6 @@ public class LR_Automaton extends Automaton {
 
         for(ItemLR it : I5)
             System.out.println(it);
-
 
     }
 

@@ -23,7 +23,7 @@ public class TestSLR {
         for(Production pro : grammar.Productions)
             expected.add(createItem(0, pro));
 
-        SLR_Automaton SLR = new SLR_Automaton(grammar);
+        SLR_Automaton SLR = new SLR_Automaton(grammar, null);
 
         ArrayList<Production> result = SLR.CLOSURE(expected.get(0));
 
@@ -37,7 +37,7 @@ public class TestSLR {
     public void testGoTo() throws IOException {
         grammar = new Grammar("example10.txt");
         grammar.augmentGivenGrammar();
-        SLR_Automaton SLR = new SLR_Automaton(grammar);
+        SLR_Automaton SLR = new SLR_Automaton(grammar, null);
 
         ArrayList<Production> C = new ArrayList<>();
         ArrayList<Production> expected = new ArrayList<>();
@@ -64,7 +64,7 @@ public class TestSLR {
     public void testGoTo1() throws IOException {
         grammar = new Grammar("example10.txt");
         grammar.augmentGivenGrammar();
-        SLR_Automaton SLR = new SLR_Automaton(grammar);
+        SLR_Automaton SLR = new SLR_Automaton(grammar, null);
 
         ArrayList<Production> C = new ArrayList<>();
         Production p1 = createItem(0, grammar.Productions.get(0));

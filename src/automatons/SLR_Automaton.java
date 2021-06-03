@@ -1,5 +1,6 @@
 package automatons;
 
+import main.Controller;
 import main.Grammar;
 import util.*;
 
@@ -7,20 +8,19 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
-
-
-import static java.lang.Math.abs;
 import static util.SupportFunctions.*;
 
 public class SLR_Automaton extends Automaton {
 
     private Grammar g;
+    private Controller controller;
     public HashMap<Token, ArrayList<Token>> FollowLR;
     public ArrayList<ArrayList<Production>> items;
     public HashMap<Integer, HashMap<Token, String>> actionTable;
 
-    public SLR_Automaton(Grammar grammar){
+    public SLR_Automaton(Grammar grammar, Controller controller){
         g = grammar;
+        this.controller = controller;
     }
 
     public ArrayList<Production> GOTO(ArrayList<Production> I, Token X){
@@ -83,8 +83,6 @@ public class SLR_Automaton extends Automaton {
 
         return set;
     }
-
-
 
     public void buildAllItems(){
         int index = 0;
@@ -151,8 +149,7 @@ public class SLR_Automaton extends Automaton {
     @Override
     public void makeActionTable(){
         actionTable = new HashMap<>();
-        boolean e1 = false;
-
+        boolean e1 = controller.errorRecoveryLR.isSelected();
 
         for (int i = 0; i < items.size(); i++) {
             actionTable.put(i, new HashMap<>());
@@ -173,22 +170,32 @@ public class SLR_Automaton extends Automaton {
         if(e1){
             Token plus = new Token("+", "TERMINAL");
             Token mult = new Token("*", "TERMINAL");
+            Token id = new Token("id", "TERMINAL");
+            Token closeBracket = new Token(")", "TERMINAL");
             Token endMarker = new Token("$", "END_MARKER");
             actionTable.get(0).replace(plus, "e1");
             actionTable.get(0).replace(mult, "e1");
             actionTable.get(0).replace(endMarker, "e1");
+            actionTable.get(0).replace(closeBracket, "e2");
 
-            actionTable.get(2).replace(plus, "e1");
-            actionTable.get(2).replace(mult, "e1");
-            actionTable.get(2).replace(endMarker, "e1");
+            actionTable.get(1).replace(closeBracket, "e2");
+            actionTable.get(1).replace(mult, "s6");
+            actionTable.get(1).replace(id, "e3");
+
+            actionTable.get(3).replace(id, "s5");
 
             actionTable.get(4).replace(plus, "e1");
             actionTable.get(4).replace(mult, "e1");
-            actionTable.get(4).replace(endMarker, "e1");
+            actionTable.get(4).replace(closeBracket, "e1");
 
-            actionTable.get(5).replace(plus, "e1");
-            actionTable.get(5).replace(mult, "e1");
-            actionTable.get(5).replace(endMarker, "e1");
+            actionTable.get(5).replace(id, "e3");
+
+            actionTable.get(6).replace(closeBracket, "e2");
+            actionTable.get(6).replace(endMarker, "e1");
+            actionTable.get(6).replace(plus, "e1");
+            actionTable.get(6).replace(mult, "e1");
+
+            actionTable.get(7).replace(closeBracket, "e2");
         }
 
     }
@@ -246,7 +253,7 @@ public class SLR_Automaton extends Automaton {
         }
     }
     public static void main(String[] args) throws IOException {
-        SLR_Automaton a = new SLR_Automaton(new Grammar("example14.txt"));
+        SLR_Automaton a = new SLR_Automaton(new Grammar("example14.txt"), null);
         /*a.buildAllItems();
         a.buildFollow();
         System.out.println(a.ACTION(3, new Token("id", "TERMINAL")));*/

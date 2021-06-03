@@ -9,15 +9,12 @@ import util.Token;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import static util.SupportFunctions.removeDuplicates;
-
 public class TestLR {
     private Grammar grammar;
 
     @Test
     public void testCLOSURE1() throws IOException {
         LR_Automaton LR = new LR_Automaton(new Grammar("example11.txt"));
-        LR.g.printGrammar();
         LR.g.augmentGivenGrammar();
 
         ItemLR item = new ItemLR(0, LR.g.Productions.get(0));
