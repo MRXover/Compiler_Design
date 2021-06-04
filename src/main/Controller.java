@@ -46,6 +46,8 @@ public class Controller {
     @FXML
     private MenuItem LoadFromFile;
     @FXML
+    private MenuItem Quit;
+    @FXML
     private MenuItem MakeFirstAndFollow;
     @FXML
     private MenuItem MakeSyntaxMatrix;
@@ -89,6 +91,10 @@ public class Controller {
 
     @FXML
     void initialize() {
+
+        Quit.setOnAction(event -> {
+            System.exit(0);
+        });
 
         Clear.setOnAction(actionEvent -> {
             GrammarArea.setText("");
